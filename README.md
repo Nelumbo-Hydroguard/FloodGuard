@@ -10,7 +10,7 @@ alagamento e inundação urbana, com piloto em Blumenau/SC.
 > não movido, ver [docs/autoria-licenca.md](docs/autoria-licenca.md).
 > Este README será atualizado a cada fase.
 
-## O que é
+## O que é?
 
 FloodGuard integra:
 
