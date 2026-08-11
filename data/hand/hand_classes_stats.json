@@ -1,0 +1,22 @@
+[
+  {
+    "class_id": 0,
+    "area_m2": 301567102.9137623,
+    "percent_area": 17.1
+  },
+  {
+    "class_id": 1,
+    "area_m2": 174992836.84589565,
+    "percent_area": 9.92
+  },
+  {
+    "class_id": 2,
+    "area_m2": 361421604.7305636,
+    "percent_area": 20.49
+  },
+  {
+    "class_id": 3,
+    "area_m2": 925794538.3203055,
+    "percent_area": 52.49
+  }
+]

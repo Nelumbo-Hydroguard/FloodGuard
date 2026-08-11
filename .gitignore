@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+**/.venv/
+**/venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node / JS
+node_modules/
+**/node_modules/
+dist/
+build/
+.next/
+.nuxt/
+
+# Env / Secrets
+.env
+.env.*
+!.env.example
+
+# OS / IDEs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.project
+.pydevproject
+.settings/
+
+# Databases
+*.sqlite
+*.db
+
+# Archives
+*.zip
+*.tar
+*.gz
+*.7z
+
+# Geoprocessing (no heavy files in commit)
+data/raw/
+*.tif
+*.tiff
+outputs_dem_respaldo/
+outputs_dem/
+outputs_hand/
+
+# Logs
+*.log

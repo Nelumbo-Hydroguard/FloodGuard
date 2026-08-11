@@ -1,0 +1,12 @@
+-- FloodGuard — este arquivo foi superado pela F2.
+--
+-- Na F1, este seed inseria um município "Blumenau/SC" com geometria NULL
+-- (coluna `boundary`, sem dado espacial real ainda). Na F2 a tabela
+-- `municipalities` foi recriada (ver db/migrations/003_hand_layers.sql) com
+-- a coluna `geom` no lugar de `boundary`, e a geometria real de Blumenau
+-- passou a ser importada do artefato HAND via script Python — não faz
+-- sentido manter um INSERT SQL manual aqui, que ficaria com geometria NULL
+-- e duplicaria o registro real.
+--
+-- Para popular municipalities/basins/hand_zones com os dados reais de
+-- Blumenau, ver db/seeds/import_hand_blumenau.md.
