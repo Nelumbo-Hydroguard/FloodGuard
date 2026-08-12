@@ -14,8 +14,17 @@ export function Layout() {
           <Link to="/mapa" className="text-slate-300 hover:text-white">
             Mapa de risco
           </Link>
+          <Link to="/alertas" className="text-slate-300 hover:text-white">
+            Alertas
+          </Link>
+          <Link to="/telemetria" className="text-slate-300 hover:text-white">
+            Telemetria
+          </Link>
           <Link to="/abrigos" className="text-slate-300 hover:text-white">
             Abrigos
+          </Link>
+          <Link to="/sobre" className="text-slate-300 hover:text-white">
+            Sobre
           </Link>
         </nav>
       </header>

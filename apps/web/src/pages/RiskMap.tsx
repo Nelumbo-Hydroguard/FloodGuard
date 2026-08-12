@@ -4,18 +4,20 @@ import { fetchGeoStatus, fetchHandZonesSummary, type HandZoneSummary } from "../
 export function RiskMap() {
   const [geoStatus, setGeoStatus] = useState<string | null>(null);
   const [classes, setClasses] = useState<HandZoneSummary[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [apiDown, setApiDown] = useState(false);
+  const [postgisPending, setPostgisPending] = useState(false);
 
   useEffect(() => {
     fetchGeoStatus()
       .then((data) => setGeoStatus(data.note))
-      .catch(() => setError("Não foi possível falar com a API. O backend está rodando?"));
+      .catch(() => setApiDown(true));
 
     fetchHandZonesSummary()
       .then((data) => setClasses(data.classes))
       .catch(() => {
-        // Banco pode ainda não ter sido populado (export_to_postgis.py export-all
-        // não rodou) — falha silenciosa aqui, cards HAND simplesmente não aparecem.
+        // API no ar, mas banco sem as tabelas HAND populadas (export-all não
+        // rodou) — cai no fallback informativo, não em erro genérico.
+        setPostgisPending(true);
       });
   }, []);
 
@@ -28,7 +30,11 @@ export function RiskMap() {
         (PostGIS). Renderização cartográfica com Leaflet entra na F4.
       </p>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {apiDown && (
+        <p className="text-red-400 text-sm mb-4">
+          Não foi possível falar com a API. O backend está rodando?
+        </p>
+      )}
       {geoStatus && <p className="text-slate-500 text-sm mb-4">Status da API: {geoStatus}</p>}
 
       {classes && classes.length > 0 && (
@@ -46,11 +52,15 @@ export function RiskMap() {
         </div>
       )}
 
-      {!classes && !error && (
-        <p className="text-slate-500 text-sm">
-          Zonas HAND ainda não carregadas — rode
-          services/geo/scripts/export_to_postgis.py export-all contra o banco
-          local (ver db/seeds/import_hand_blumenau.md).
+      {postgisPending && !apiDown && (
+        <p className="text-slate-500 text-sm border border-slate-800 rounded-lg p-4">
+          Camadas HAND disponíveis como artefatos do projeto; conexão PostGIS
+          pendente para ambiente local. Rode{" "}
+          <code className="text-slate-400">
+            services/geo/scripts/export_to_postgis.py export-all
+          </code>{" "}
+          contra o banco local (ver{" "}
+          <code className="text-slate-400">db/seeds/import_hand_blumenau.md</code>).
         </p>
       )}
     </div>

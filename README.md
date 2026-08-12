@@ -3,12 +3,12 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F3 — motor de risco explicável rodando em
-> FastAPI, com testes unitários e sem dependência obrigatória de banco).
-> `geo` (F2) e `risk`/`telemetry`/`scenarios` (F3) já têm regra de negócio
-> real; `alerts` e `shelters` seguem placeholder. Autoria coletiva
-> registrada — ver [docs/autoria-licenca.md](docs/autoria-licenca.md).
-> Este README será atualizado a cada fase.
+> Status: em consolidação (Fase F4 — dashboard web consumindo a API real do
+> motor de risco). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3) e o
+> frontend que os consome (F4) já têm regra de negócio real; `alerts` e
+> `shelters` seguem placeholder. Autoria coletiva registrada — ver
+> [docs/autoria-licenca.md](docs/autoria-licenca.md). Este README será
+> atualizado a cada fase.
 
 ## O que é?
 
@@ -206,6 +206,45 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -v
 ```
 
+## F4 — dashboard web
+
+Frontend React passou a consumir a API real do motor de risco (F3) — nada
+hardcoded quando a API está no ar; fallback só quando ela está fora do ar
+ou o PostGIS ainda não foi populado.
+
+Telas:
+
+| Rota | Consome | O que mostra |
+|---|---|---|
+| `/painel` | `GET /api/risk/status`, `GET /api/scenarios/demo` | 3 cards de risco (seguro/alerta/crítico) com score, confiança, fatores, justificativa e ação recomendada — vindos do motor real, não hardcoded |
+| `/mapa` | `GET /api/geo/status`, `GET /api/geo/hand-zones/summary` | Zonas HAND; fallback explícito ("Camadas HAND disponíveis como artefatos do projeto; conexão PostGIS pendente para ambiente local.") se o banco não tiver sido populado |
+| `/alertas` | `GET /api/scenarios/demo` | Lista de alertas simulados (nível, região, explicação, ação recomendada, horário) derivados dos 3 cenários fixos |
+| `/telemetria` | `POST /api/risk/evaluate`, `POST /api/telemetry/mesh-payload` | Formulário para testar o motor de risco com valores livres; botão separado gera o payload UniMesh/LoRa simulado (`implemented: false`) |
+| `/sobre` | — (estático) | GovTech B2G, Defesa Civil, Blumenau/SC, HAND = suscetibilidade, motor = PoC explicável, U-RNN = roadmap |
+
+Endpoints reais consumidos pelo frontend (todos com prefixo `/api/`, exceto
+`/health`): `geo/status`, `geo/hand-zones/summary`, `risk/status`,
+`risk/evaluate`, `scenarios/demo`, `telemetry/mesh-payload`.
+`risk/evaluate-batch`, `telemetry/normalize` e `geo/{municipality,basins}`
+existem na API mas não têm consumidor dedicado no frontend ainda.
+
+Componentes novos: `RiskCard`, `StatusBadge`, `FactorBar`
+(`apps/web/src/components/`) — reutilizados em `/painel`, `/alertas` e
+`/telemetria`.
+
+**Limitações conhecidas:**
+
+- Região dos alertas simulados (`/alertas`) é mapeada no frontend
+  (`SCENARIO_REGION` em `Alertas.tsx`), espelhando os cenários fixos do
+  backend (`app/routers/scenarios.py`) — o `RiskEvaluationResponse` não
+  carrega região. Se o backend mudar a região de um cenário, esse mapa
+  precisa ser atualizado também.
+- `/mapa` ainda não renderiza cartografia (Leaflet) — mostra os cards de
+  resumo por classe HAND. Renderização de mapa real segue como próximo
+  passo.
+- Nenhuma tela usa `evaluate-batch` — cada avaliação em `/telemetria` é uma
+  chamada individual a `/api/risk/evaluate`.
+
 ## Como rodar localmente
 
 Pré-requisitos: Docker e Docker Compose.
@@ -237,5 +276,9 @@ uvicorn app.main:app --reload
 # Web
 cd apps/web
 npm install
-npm run dev
+npm run dev       # http://localhost:5173, espera a API em http://localhost:8000
+npm run build      # verificação — sem lint configurado, build é o gate
 ```
+
+Frontend lê a URL da API de `VITE_API_URL` (padrão
+`http://localhost:8000` se não definida — ver `apps/web/src/lib/api.ts`).
