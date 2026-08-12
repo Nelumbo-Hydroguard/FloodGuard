@@ -52,19 +52,39 @@ Existiam dois motores de risco incompatíveis nos repositórios de origem:
 | Fórmula | média ponderada fixa (flood/chuva/suscetibilidade) | chuva efetiva `P_ef = max(0, P − C_d)` com saturação antecedente e permeabilidade espectral (NDVI/NDBI) |
 | Saída | 4 níveis (baixo/médio/alto/crítico) | 6 rótulos de suscetibilidade + risco |
 
-**Decisão:** o motor de risco canônico do FloodGuard é o do
+**Decisão original:** o motor de risco canônico do FloodGuard seria o do
 `techguard-sentinela` (`backend/engine/risk_engine.py`), por ser mais completo
 e diretamente ancorado em HAND/NDVI/NDBI.
 
-Do `americas_techguard_final_poc` são aproveitados apenas:
+**O que foi de fato implementado na F3:** uma fórmula própria, mais simples e
+explicável — não um port do motor NDVI/NDBI/Tc do `techguard-sentinela`:
 
-- a **classificação final em 4 níveis** (baixo/médio/alto/crítico), aplicada
-  como camada de apresentação sobre o resultado do motor canônico;
+```
+score = 0.45*hand_risk_weight + 0.30*rainfall_factor + 0.20*water_level_factor + 0.05*trend_factor
+```
+
+O que o `techguard-sentinela` contribuiu de fato para a F3 foi o **padrão**
+— fusão de contexto espacial HAND com variáveis dinâmicas, saída explicável
+com justificativa textual — não o código NDVI/NDBI/saturação em si. Ver
+[motor-de-risco.md](motor-de-risco.md) para a fórmula completa e
+`services/api/app/engine/risk_engine.py` para os créditos no código.
+
+Do `americas_techguard_final_poc` são aproveitados:
+
+- a **classificação final em 4 níveis** (seguro/atenção/alerta/crítico);
 - o **payload UniMesh/LoRa simulado**, com o campo `implemented: false`
-  preservado;
+  preservado (`services/api/app/engine/mesh_payload.py`, portado de
+  `src/mesh_simulator.py`);
+- a **referência de chuva de 150 mm** (`RAINFALL_REFERENCE_MM`) usada para
+  normalizar o fator de chuva;
 - os **textos de auditabilidade e transparência** dos docstrings originais
   (ex.: avisos de que a regra não é validada operacionalmente);
 - a documentação legada como referência histórica.
+
+Se o motor NDVI/NDBI/Tc completo do `techguard-sentinela` for incorporado no
+futuro, este documento e `docs/motor-de-risco.md` devem ser atualizados
+juntos — não é para a fórmula da F3 e a do sentinela ficarem descritas como
+a mesma coisa em lugares diferentes.
 
 ## Pipeline geoespacial HAND
 
@@ -95,6 +115,7 @@ brutos pesados (`data/raw/`, DEMs intermediários) não são versionados — ver
 
 ## Autoria
 
-Código reaproveitado do `techguard-sentinela` tem autor terceiro (João).
-Ver [autoria-licenca.md](autoria-licenca.md) — pendente de autorização antes
-de mover esse código para dentro do FloodGuard.
+FloodGuard é trabalho de equipe (João Benvenutti, Nyrx Oliveira, Pedro
+Zanette). Reaproveitamento do `techguard-sentinela` está autorizado sob
+acordo de equipe. Ver [autoria-licenca.md](autoria-licenca.md) para os
+termos completos e créditos por componente.
