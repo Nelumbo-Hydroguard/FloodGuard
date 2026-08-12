@@ -3,19 +3,21 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F2 — dados HAND reais de Blumenau importados
-> para PostGIS). Endpoints de geo já leem dado real; o resto (telemetry,
-> risk, alerts, shelters) segue placeholder. Autoria coletiva do motor de
-> risco (`techguard-sentinela`) foi acordada entre a equipe — código ainda
-> não movido, ver [docs/autoria-licenca.md](docs/autoria-licenca.md).
+> Status: em consolidação (Fase F3 — motor de risco explicável rodando em
+> FastAPI, com testes unitários e sem dependência obrigatória de banco).
+> `geo` (F2) e `risk`/`telemetry`/`scenarios` (F3) já têm regra de negócio
+> real; `alerts` e `shelters` seguem placeholder. Autoria coletiva
+> registrada — ver [docs/autoria-licenca.md](docs/autoria-licenca.md).
 > Este README será atualizado a cada fase.
 
 ## O que é?
 
 FloodGuard integra:
 
-- **Motor de risco** — cruza cota topográfica relativa à drenagem (HAND), índices
-  espectrais (NDVI/NDBI), chuva efetiva e saturação hidrológica do solo.
+- **Motor de risco** — cruza contexto espacial HAND com chuva acumulada,
+  nível d'água e tendência temporal numa fórmula explicável, com
+  justificativa textual e fallback quando HAND não está disponível
+  ([docs/motor-de-risco.md](docs/motor-de-risco.md)).
 - **Pipeline geoespacial HAND** — DEM + bacias hidrográficas + limites municipais,
   processados com WhiteboxTools/Rasterio/GeoPandas.
 - **Banco espacial** — PostgreSQL + PostGIS.
@@ -106,10 +108,9 @@ FloodGuard/
 ```
 
 O esqueleto acima (`services/`, `apps/`, `db/`, `infra/`) existe desde a F1.
-`data/hand/` entrou na F2, com os artefatos HAND reais de Blumenau. Código de
-negócio real ainda pendente: motor de risco (autorizado, código não movido —
-ver [docs/autoria-licenca.md](docs/autoria-licenca.md)), telemetria real,
-alertas e abrigos (F3).
+`data/hand/` entrou na F2. O motor de risco (`services/api/app/engine/`)
+entrou na F3. Ainda pendente: alertas e abrigos com regra de negócio real
+(hoje só CRUD placeholder).
 
 ## F2 — dados HAND reais
 
@@ -125,9 +126,8 @@ O coração geoespacial do projeto está conectado:
   `/api/geo/hand-zones`, `/api/geo/hand-zones/summary` e
   `/api/geo/point-risk-context` já leem dado real do PostGIS — não são mais
   placeholder.
-- `point-risk-context` dá só o contexto espacial HAND de um ponto. **Não**
-  é o motor de risco completo — esse continua fora do escopo desta fase
-  (autorizado, mas ainda não movido/implementado — F3).
+- `point-risk-context` dá só o contexto espacial HAND de um ponto. O motor
+  de risco completo que consome esse contexto foi implementado na F3.
 
 Metodologia, proveniência dos dados e limitações:
 [docs/metodologia-hand.md](docs/metodologia-hand.md). Passo a passo de
@@ -168,6 +168,44 @@ scripts/dev/test_geo_endpoints.sh
 boot automático do container (útil se você preferir rodar contra um Postgres
 já existente em vez do `postgis` do compose).
 
+## F3 — motor de risco
+
+Motor de risco explicável rodando em `services/api/app/engine/`, **sem
+dependência obrigatória de banco** — por isso avançou mesmo com a F2.1
+bloqueada por falta de acesso a Docker/PostGIS local:
+
+- `risk_engine.py` combina contexto HAND (0.45), chuva acumulada (0.30),
+  nível d'água (0.20) e tendência temporal (0.05) numa fórmula única,
+  auditável. Contexto HAND vem do payload (`hand_class_id`/
+  `hand_risk_weight`) ou de um lookup mockado por região
+  (`spatial_context.py`) — não exige consulta ao PostGIS.
+- Fallback automático quando HAND não está disponível: `confidence` cai de
+  0.95 para 0.55, peso redistribuído entre os fatores restantes,
+  justificativa deixa isso explícito.
+- `telemetry_normalizer.py` aceita payload bruto simulado com nomes de
+  campo variados (`rainfall`/`rainfall_mm`, `lat`/`latitude` etc.).
+- `mesh_payload.py` empacota o resultado como payload UniMesh/LoRa
+  simulado — `implemented: false` sempre, inclusive em risco crítico
+  (testado).
+- Endpoints novos: `POST /api/risk/evaluate`, `POST
+  /api/risk/evaluate-batch`, `GET /api/scenarios/demo` (3 cenários fixos
+  rodados pelo motor real), `POST /api/telemetry/normalize`, `POST
+  /api/telemetry/mesh-payload`.
+- **27 testes unitários** (`services/api/tests/`), todos passando sem
+  Postgres: score sempre entre 0 e 1, crítico quando todos os fatores estão
+  altos, seguro quando todos estão baixos, fallback funciona, explicação
+  muda com os fatores, payload mesh sempre `implemented: false`, todos os
+  endpoints novos respondem.
+
+Fórmula completa, fatores, exemplos reais e créditos:
+[docs/motor-de-risco.md](docs/motor-de-risco.md).
+
+```bash
+cd services/api
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -v
+```
+
 ## Como rodar localmente
 
 Pré-requisitos: Docker e Docker Compose.
@@ -184,9 +222,9 @@ Isso sobe PostGIS (com `db/migrations/*.sql` aplicadas no primeiro boot via
 `docker-entrypoint-initdb.d`), a API FastAPI com reload e o frontend Vite.
 As tabelas HAND ficam vazias até rodar a importação — ver
 [db/seeds/import_hand_blumenau.md](db/seeds/import_hand_blumenau.md) ou,
-mais direto, `scripts/dev/run_export.sh`. Fora `geo`, os demais endpoints e
-telas (telemetry, risk, alerts, shelters) ainda são placeholders, sem regra
-de negócio real.
+mais direto, `scripts/dev/run_export.sh`. `risk`, `telemetry` e `scenarios`
+funcionam sem banco (F3, veja seção abaixo). `alerts` e `shelters` ainda são
+placeholders, sem regra de negócio real.
 
 Para rodar sem Docker:
 

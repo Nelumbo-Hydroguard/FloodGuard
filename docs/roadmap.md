@@ -29,7 +29,14 @@ gerado com `implemented: false`, sem transmissão física.
 ## Modelagem e dados ambientais
 
 - Serviços de nowcasting de curto prazo (evolução do trabalho em
-  `urbanflood_urnn_demo`, mantido como repositório separado).
+  `urbanflood_urnn_demo`, mantido como repositório separado). Entrada
+  opcional futura do motor de risco (F3,
+  [motor-de-risco.md](motor-de-risco.md)): usar uma previsão de chuva de
+  curto prazo (U-RNN) no lugar da chuva acumulada simples que alimenta
+  `rainfall_factor` hoje — não substitui o fator, é uma fonte alternativa
+  para o mesmo fator.
+- Motor NDVI/NDBI/Tc completo do `techguard-sentinela` como alternativa mais
+  sofisticada à fórmula simplificada da F3.
 - Novas fontes de dados ambientais (além de Sentinel-2/Copernicus DEM).
 - Modelos hidrodinâmicos completos além do proxy topográfico HAND.
 
