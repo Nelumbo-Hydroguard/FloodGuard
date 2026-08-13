@@ -3,11 +3,12 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F8 — documentação final e preparação de
-> apresentação, sem feature nova). `geo` (F2), `risk`/`telemetry`/`scenarios`
-> (F3), `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7) já
+> Status: F9.1 integrada em `main` — mapa (`/mapa`) mostra os alertas
+> simulados de `/alertas` como marcadores clicáveis, com destaque pulsante
+> no nível crítico. `geo` (F2), `risk`/`telemetry`/`scenarios` (F3),
+> `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7/F9.1) já
 > têm regra de negócio real ou simulação consistente ponta a ponta — nenhum
-> ainda persiste dado em banco. **65 de 65 testes de backend passando.**
+> ainda persiste dado em banco. **67 de 67 testes de backend passando.**
 > Autoria coletiva registrada — ver
 > [docs/autoria-licenca.md](docs/autoria-licenca.md). Documentação de
 > apresentação: [docs/resumo-executivo-floodguard.md](docs/resumo-executivo-floodguard.md),
@@ -85,9 +86,8 @@ cada um desenvolveu anteriormente em um único repositório.
 - **Nyrx Oliveira** — parte do acordo de equipe; repositório individual sem
   código reaproveitável nesta consolidação.
 
-Repositório final: ainda pendente de criação dentro de uma
-organização/time do GitHub — o consolidado hoje vive só localmente.
-Proveniência completa por componente, autorizações e créditos individuais:
+Repositório: [Nelumbo-Hydroguard/FloodGuard](https://github.com/Nelumbo-Hydroguard/FloodGuard)
+no GitHub. Proveniência completa por componente, autorizações e créditos individuais:
 [docs/autoria-licenca.md](docs/autoria-licenca.md).
 
 ## Roadmap
@@ -197,8 +197,8 @@ bloqueada por falta de acesso a Docker/PostGIS local:
   rodados pelo motor real), `POST /api/telemetry/normalize`, `POST
   /api/telemetry/mesh-payload`.
 - **27 testes unitários** entregues nesta fase (`services/api/tests/`) —
-  total atual do projeto é 65/65 (F3+F6+F7+F9, ver seções F8/F9 abaixo), todos
-  passando sem Postgres: score sempre entre 0 e 1, crítico quando todos os
+  total atual do projeto é 67/67 (F3+F6+F7+F9+F9.1, ver seções F8/F9/F9.1
+  abaixo), todos passando sem Postgres: score sempre entre 0 e 1, crítico quando todos os
   fatores estão altos, seguro quando todos estão baixos, fallback funciona,
   explicação muda com os fatores, payload mesh sempre `implemented: false`,
   todos os endpoints novos respondem.
@@ -423,7 +423,36 @@ Dois achados de severidade P1, ambos corrigidos e cobertos por teste:
   exibia um peso e o motor usava outro, e escolher "sem contexto HAND" não
   ativava o fallback. O seletor passou a sincronizar o peso.
 
-Total de testes de backend: **65/65**.
+Total de testes de backend nesta fase: **65/65**.
+
+## F9.1 — alertas simulados no mapa
+
+Sem feature nova de fundo — melhoria controlada de UX, avaliada contra o
+projeto de referência externo `techguard-sentinela` (João Benvenutti,
+analisado só como inspiração, código não copiado). `/mapa` passou a mostrar
+os mesmos alertas simulados de `/alertas` como marcadores clicáveis:
+
+- Popup com título, região, status, score, confiança, explicação, ação
+  recomendada e aviso `[simulado]`, com link para `/alertas/:id` e, quando
+  aplicável, `/telemetria`.
+- Marcador do alerta crítico com destaque pulsante (`animate-ping`,
+  Tailwind — sem dependência nova).
+- Navegação cruzada: `/alertas` e `/alertas/:id` ganharam link "Ver no
+  mapa", que leva a `/mapa?alert=<id>` — o mapa dá `flyTo` até o marcador e
+  abre o popup automaticamente.
+- Backend: `DemoAlert` (`GET /api/alerts/demo`) passou a expor
+  `latitude`/`longitude`, vindos da mesma fonte já usada por
+  `/api/geo/demo-points` — nenhuma geografia nova inventada.
+- Fallback estático do mapa preservado sem alteração; PostGIS continua
+  opcional para a demo.
+
+Relatório completo, com comparação item a item contra o projeto de
+referência e o que foi deliberadamente **não** trazido (WebSocket/MQTT,
+triagem humana com estado, endpoint de coordenada fabricada):
+[docs/auditoria-mapa-benvenutti-f9-1.md](docs/auditoria-mapa-benvenutti-f9-1.md).
+
+Total de testes de backend: **67/67** (65 da F9 + 2 novos de coordenadas de
+alerta).
 
 ## Como rodar localmente
 

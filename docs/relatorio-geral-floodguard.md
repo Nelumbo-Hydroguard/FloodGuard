@@ -17,6 +17,17 @@
 > `/api/alerts/demo/{id}`, `GET /api/shelters/demo`, ambos simulados e sem
 > persistência, ver [README.md](../README.md#f7--alertas-e-abrigos-simulados)).
 > Idem: não editado ponto a ponto abaixo.
+>
+> **Atualização F9.1 (estado atual do projeto):** a tabela da seção 7
+> ("Estado atual por fase") para em F5 e não reflete F6–F9.1 — todas
+> concluídas, ver [README.md](../README.md). Em particular, a pendência do
+> F4 ("`/mapa` não renderiza cartografia, sem Leaflet instalado") está
+> **corrigida desde a F6** e o mapa hoje também mostra alertas simulados
+> clicáveis com destaque no nível crítico (F9.1, ver
+> [docs/auditoria-mapa-benvenutti-f9-1.md](auditoria-mapa-benvenutti-f9-1.md)).
+> Total de testes de backend hoje: **67/67**. Repositório hospedado em
+> `github.com/Nelumbo-Hydroguard/FloodGuard`. Idem: tabela da seção 7 não
+> editada ponto a ponto, mantida como registro histórico da F5.
 
 ## 1. Visão executiva
 
