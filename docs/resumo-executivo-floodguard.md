@@ -15,9 +15,11 @@ está em operação real.
 
 **Diferencial.** O mapa comunica suscetibilidade espacial de forma direta —
 4 zonas HAND coloridas sobre a área real de Blumenau, com marcadores de
-cenários e abrigos, funcionando mesmo sem PostGIS (fallback geoespacial
-estático gerado dos mesmos dados). O motor nunca finge certeza que não tem:
-sem contexto HAND, reduz a própria confiança e avisa isso na explicação.
+alertas simulados (destaque pulsante no nível crítico) e abrigos,
+funcionando mesmo sem PostGIS (fallback geoespacial estático gerado dos
+mesmos dados). Navegação cruzada entre `/alertas` e `/mapa?alert=<id>`. O
+motor nunca finge certeza que não tem: sem contexto HAND, reduz a própria
+confiança e avisa isso na explicação.
 
 **Arquitetura.** Backend FastAPI (Python), motor de risco sem dependência
 obrigatória de banco, PostgreSQL/PostGIS (schema pronto). Frontend
@@ -26,12 +28,13 @@ React 19 + Vite + TypeScript + Tailwind + Leaflet, 8 telas navegáveis
 sobre) mais 404 amigável. Autoria coletiva — Pedro Zanette, João
 Benvenutti, Nyrx Oliveira.
 
-**Estado atual (F8, main).** Motor de risco, dados HAND reais, mapa com
-fallback, telemetria, alertas e abrigos simulados via API — todos
-implementados e navegáveis. Alertas e abrigos sem persistência: recalculados
-ou fixos em memória a cada chamada, por decisão de escopo da PoC.
+**Estado atual (F9.1, main).** Motor de risco, dados HAND reais, mapa com
+fallback e alertas simulados clicáveis, telemetria, alertas e abrigos
+simulados via API — todos implementados e navegáveis. Alertas e abrigos sem
+persistência: recalculados ou fixos em memória a cada chamada, por decisão
+de escopo da PoC.
 
-**Validação.** **65 de 65 testes automatizados de backend passando**
+**Validação.** **67 de 67 testes automatizados de backend passando**
 (motor de risco, telemetria, payload simulado, geo, alertas, abrigos —
 nenhum exige PostgreSQL). Build de frontend limpo. Fallback estático do
 mapa confirmado ativo neste ambiente, já que PostGIS local segue
