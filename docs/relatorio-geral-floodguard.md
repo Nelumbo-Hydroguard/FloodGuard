@@ -114,7 +114,7 @@ O que **de fato funciona hoje**, sem PostGIS:
 - `GET /api/scenarios/demo` — 3 cenários fixos rodados pelo motor real, não hardcoded (`scenarios.py`).
 - `POST /api/telemetry/normalize` — normalização de payload bruto simulado, aceita aliases de campo (`telemetry_normalizer.py`).
 - `POST /api/telemetry/mesh-payload` — gera payload UniMesh/LoRa simulado (`mesh_payload.py`).
-- **27 testes automatizados** cobrindo motor de risco, normalizador, payload mesh e endpoints da API (`services/api/tests/`), todos passando sem banco.
+- **Testes automatizados** cobrindo motor de risco, normalizador, payload mesh e endpoints da API (`services/api/tests/`), todos passando sem banco — eram 27 na F3, são **65 na F9** (F3 + F6 + F7 + regressões da F9).
 - Dashboard: `/painel` (3 cards de risco reais), `/telemetria` (formulário → `POST /risk/evaluate` + geração de payload mesh), `/alertas` (lista derivada de `/scenarios/demo`), `/sobre` (conteúdo estático), `/mapa` com fallback informativo quando PostGIS não está populado.
 
 Com PostGIS configurado (não testado localmente nesta sessão), também
@@ -354,9 +354,9 @@ Postgres descartável sem a extensão PostGIS instalada.
 
 - FloodGuard: painel de apoio à decisão para Defesa Civil, piloto Blumenau/SC, GovTech B2G.
 - Motor de risco explicável: HAND + chuva + nível d'água + tendência → score, nível, justificativa, ação recomendada.
-- **27 testes automatizados passando**, motor roda sem depender de banco.
+- **65 testes automatizados passando** (estado da F9), motor roda sem depender de banco.
 - Backend FastAPI + frontend React/Vite/Tailwind, ambos validados rodando localmente.
-- 5 telas navegáveis: painel, mapa, alertas, telemetria, sobre — todas consumindo API real, não mock hardcoded.
+- 8 telas navegáveis + 404 amigável: landing, painel, mapa, telemetria, alertas, detalhe de alerta, abrigos, sobre — todas consumindo API real, não mock hardcoded.
 - 100% software-only: telemetria simulada, payload UniMesh/LoRa simulado (`implemented: false` sempre), zero hardware.
 - Autoria coletiva (João Benvenutti, Nyrx Oliveira, Pedro Zanette), reaproveitamento do `techguard-sentinela` autorizado e documentado.
 - Pendências honestas: PostGIS real ainda não validado localmente (falta Docker/sudo neste ambiente), mapa sem cartografia (Leaflet não instalado), sem autenticação, sem deploy.

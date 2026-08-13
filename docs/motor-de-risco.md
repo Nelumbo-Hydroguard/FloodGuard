@@ -53,12 +53,17 @@ fórmula — uma chuva de 300 mm não faz o fator de chuva passar de 1.0.
 
 ## Classificação
 
+Os limiares são intervalos semiabertos — o valor da fronteira cai sempre na
+faixa seguinte (`classify_risk` em `risk_rules.py` compara com `<`). Um
+score de exatamente 0.25, por exemplo, classifica como `atencao`, não como
+`seguro`.
+
 | Faixa de `risk_score` | `risk_level` |
 |---|---|
-| 0.00 – 0.25 | `seguro` |
-| 0.26 – 0.50 | `atencao` |
-| 0.51 – 0.75 | `alerta` |
-| 0.76 – 1.00 | `critico` |
+| 0.00 ≤ score < 0.25 | `seguro` |
+| 0.25 ≤ score < 0.50 | `atencao` |
+| 0.50 ≤ score < 0.75 | `alerta` |
+| 0.75 ≤ score ≤ 1.00 | `critico` |
 
 ## Fallback sem HAND
 

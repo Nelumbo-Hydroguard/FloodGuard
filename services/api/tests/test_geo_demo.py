@@ -8,6 +8,8 @@ fallback) em vez de travar num deles — o que importa é nunca 500 e sempre
 ter as chaves esperadas.
 """
 
+from unittest.mock import MagicMock, patch
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -169,3 +171,64 @@ def test_postgis_endpoints_never_leak_credentials_in_error():
         assert "floodguard:" not in detail
         assert "psycopg" not in detail
         assert "localhost:5432" not in detail
+
+
+# --- demo-map com banco no ar mas tabela vazia (F9) -----------------------
+#
+# Regressão da auditoria F9: até então esse caminho levantava um RuntimeError
+# que o `except SQLAlchemyError` do endpoint não capturava — resultado 500, e
+# o frontend derrubava a página inteira do mapa em vez de usar o fallback.
+# É exatamente o estado de quem roda o `docker compose up` do README (as
+# migrations criam as tabelas vazias) sem rodar `export_to_postgis.py
+# export-all`. Os testes acima não pegavam isso porque neste ambiente o
+# PostGIS nem responde — cai sempre no ramo de SQLAlchemyError.
+
+
+def _patched_engine_returning(rows):
+    """Engine falso que devolve `rows` para qualquer consulta."""
+    result = MagicMock()
+    result.mappings.return_value.all.return_value = rows
+    connection = MagicMock()
+    connection.execute.return_value = result
+    context = MagicMock()
+    context.__enter__.return_value = connection
+    fake_engine = MagicMock()
+    fake_engine.connect.return_value = context
+    return fake_engine
+
+
+def test_demo_map_falls_back_when_postgis_up_but_hand_zones_empty():
+    with patch("app.routers.geo.engine", _patched_engine_returning([])):
+        response = client.get("/api/geo/demo-map")
+
+    assert response.status_code == 200, "tabela vazia não pode virar 500"
+    body = response.json()
+    assert body["source"] == "static_fallback"
+    assert body["status"] == "degraded"
+    assert len(body["stats"]) == 4, "fallback deve manter as 4 classes HAND de referência"
+    assert "export-all" in body["message"], "mensagem deve dizer como popular o banco"
+
+
+def test_demo_map_empty_table_message_never_leaks_credentials():
+    with patch("app.routers.geo.engine", _patched_engine_returning([])):
+        message = client.get("/api/geo/demo-map").json()["message"].lower()
+
+    assert "password" not in message
+    assert "floodguard:" not in message
+    assert "psycopg" not in message
+
+
+def test_demo_map_uses_postgis_when_hand_zones_has_rows():
+    rows = [
+        {"class_id": 0, "class_label": "Alta suscetibilidade", "susceptibility": "alta", "risk_weight": 0.9, "area_m2": 300.0},
+        {"class_id": 3, "class_label": "Muito baixa suscetibilidade", "susceptibility": "muito_baixa", "risk_weight": 0.1, "area_m2": 700.0},
+    ]
+    with patch("app.routers.geo.engine", _patched_engine_returning(rows)):
+        body = client.get("/api/geo/demo-map").json()
+
+    assert body["source"] == "postgis"
+    assert body["status"] == "ok"
+    assert [s["class_id"] for s in body["stats"]] == [0, 3]
+    # percent_area calculado sobre o total real das linhas, não fixo.
+    assert body["stats"][0]["percent_area"] == 30.0
+    assert body["stats"][1]["percent_area"] == 70.0

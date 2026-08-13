@@ -31,7 +31,7 @@ fallback, telemetria, alertas e abrigos simulados via API — todos
 implementados e navegáveis. Alertas e abrigos sem persistência: recalculados
 ou fixos em memória a cada chamada, por decisão de escopo da PoC.
 
-**Validação.** **62 de 62 testes automatizados de backend passando**
+**Validação.** **65 de 65 testes automatizados de backend passando**
 (motor de risco, telemetria, payload simulado, geo, alertas, abrigos —
 nenhum exige PostgreSQL). Build de frontend limpo. Fallback estático do
 mapa confirmado ativo neste ambiente, já que PostGIS local segue

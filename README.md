@@ -7,7 +7,7 @@ alagamento e inundação urbana, com piloto em Blumenau/SC.
 > apresentação, sem feature nova). `geo` (F2), `risk`/`telemetry`/`scenarios`
 > (F3), `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7) já
 > têm regra de negócio real ou simulação consistente ponta a ponta — nenhum
-> ainda persiste dado em banco. **62 de 62 testes de backend passando.**
+> ainda persiste dado em banco. **65 de 65 testes de backend passando.**
 > Autoria coletiva registrada — ver
 > [docs/autoria-licenca.md](docs/autoria-licenca.md). Documentação de
 > apresentação: [docs/resumo-executivo-floodguard.md](docs/resumo-executivo-floodguard.md),
@@ -197,7 +197,7 @@ bloqueada por falta de acesso a Docker/PostGIS local:
   rodados pelo motor real), `POST /api/telemetry/normalize`, `POST
   /api/telemetry/mesh-payload`.
 - **27 testes unitários** entregues nesta fase (`services/api/tests/`) —
-  total atual do projeto é 62/62 (F3+F6+F7, ver seção F8 abaixo), todos
+  total atual do projeto é 65/65 (F3+F6+F7+F9, ver seções F8/F9 abaixo), todos
   passando sem Postgres: score sempre entre 0 e 1, crítico quando todos os
   fatores estão altos, seguro quando todos estão baixos, fallback funciona,
   explicação muda com os fatores, payload mesh sempre `implemented: false`,
@@ -399,9 +399,31 @@ avaliação acadêmica (SENAI) e para apresentação ao vivo:
 | [docs/checklist-apresentacao-floodguard.md](docs/checklist-apresentacao-floodguard.md) | Checklist prático — comandos, URLs, o que conferir antes de apresentar |
 | [docs/resumo-executivo-floodguard.md](docs/resumo-executivo-floodguard.md) | 1 página — problema, solução, diferencial, arquitetura, estado atual, validação, limitações, próximos passos |
 
-Estado validado nesta fase: **62 de 62 testes de backend passando**,
+Estado validado nesta fase: **62 de 62 testes de backend passando**
+(65/65 após as regressões acrescentadas na F9),
 `npm run build` do frontend limpo, todos os endpoints e rotas de F0–F7
 respondendo como esperado.
+
+## F9 — auditoria de excelência
+
+Varredura final de backend, frontend, documentação e demo antes da banca,
+com correções controladas (sem feature nova, sem mudança de escopo).
+Relatório completo: [docs/auditoria-excelencia-f9.md](docs/auditoria-excelencia-f9.md).
+
+Dois achados de severidade P1, ambos corrigidos e cobertos por teste:
+
+- **`GET /api/geo/demo-map` respondia 500** quando o PostGIS estava
+  conectado mas `hand_zones` estava vazia — estado de quem roda o
+  `docker compose up` acima sem o importador. Como o frontend usa esse
+  endpoint para escolher a fonte do mapa, `/mapa` caía inteiro em tela de
+  erro em vez de usar o fallback. Tabela vazia passou a ser tratada como
+  indisponibilidade de dado, não como erro.
+- **O seletor "Classe HAND" em `/telemetria` não tinha efeito** enquanto o
+  campo "Peso HAND" estivesse preenchido (o backend prioriza o peso): a tela
+  exibia um peso e o motor usava outro, e escolher "sem contexto HAND" não
+  ativava o fallback. O seletor passou a sincronizar o peso.
+
+Total de testes de backend: **65/65**.
 
 ## Como rodar localmente
 

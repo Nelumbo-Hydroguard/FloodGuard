@@ -61,12 +61,17 @@ const QUICK_EXAMPLES: Record<"seguro" | "alerta" | "critico", FormState> = {
   },
 };
 
+// Pesos idênticos a app/engine/spatial_context.py::HAND_CLASSES_BY_ID.
 const HAND_CLASS_OPTIONS = [
-  { id: "3", label: "3 — Muito baixa suscetibilidade (peso 0.1)" },
-  { id: "2", label: "2 — Baixa suscetibilidade (peso 0.3)" },
-  { id: "1", label: "1 — Média suscetibilidade (peso 0.6)" },
-  { id: "0", label: "0 — Alta suscetibilidade (peso 0.9)" },
+  { id: "3", weight: "0.1", label: "3 — Muito baixa suscetibilidade (peso 0.1)" },
+  { id: "2", weight: "0.3", label: "2 — Baixa suscetibilidade (peso 0.3)" },
+  { id: "1", weight: "0.6", label: "1 — Média suscetibilidade (peso 0.6)" },
+  { id: "0", weight: "0.9", label: "0 — Alta suscetibilidade (peso 0.9)" },
 ];
+
+const WEIGHT_BY_HAND_CLASS: Record<string, string> = Object.fromEntries(
+  HAND_CLASS_OPTIONS.map((opt) => [opt.id, opt.weight]),
+);
 
 function inputClass() {
   return "w-full rounded border border-navy-600 bg-navy-950 px-3 py-1.5 text-sm text-slate-100 focus:border-accent focus:outline-none";
@@ -81,6 +86,28 @@ export function Telemetria() {
 
   const field = (key: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+
+  /**
+   * Trocar a classe HAND também ajusta o peso (F9).
+   *
+   * O backend prioriza `hand_risk_weight` sobre `hand_class_id`
+   * (app/engine/risk_engine.py::_resolve_spatial_context). Sem esta
+   * sincronização, mudar o seletor de classe não alterava nada enquanto o
+   * campo de peso estivesse preenchido: a tela exibia "peso 0.1" e o motor
+   * calculava com 0.9. Pior, escolher "sem contexto HAND" não ativava o
+   * fallback, porque o peso continuava preenchido.
+   *
+   * O campo de peso continua editável — quem quiser um valor fora da tabela
+   * ainda pode digitar depois de escolher a classe.
+   */
+  function handleHandClassChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const classId = event.target.value;
+    setForm((prev) => ({
+      ...prev,
+      hand_class_id: classId,
+      hand_risk_weight: classId === "" ? "" : (WEIGHT_BY_HAND_CLASS[classId] ?? prev.hand_risk_weight),
+    }));
+  }
 
   function applyExample(example: keyof typeof QUICK_EXAMPLES) {
     setForm(QUICK_EXAMPLES[example]);
@@ -200,7 +227,7 @@ export function Telemetria() {
           </label>
           <label className="flex flex-col gap-1 text-sm text-slate-300">
             Classe HAND
-            <select className={inputClass()} value={form.hand_class_id} onChange={field("hand_class_id")}>
+            <select className={inputClass()} value={form.hand_class_id} onChange={handleHandClassChange}>
               <option value="">sem contexto HAND (fallback)</option>
               {HAND_CLASS_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
@@ -210,7 +237,7 @@ export function Telemetria() {
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm text-slate-300">
-            Peso HAND (0 a 1) — sobrepõe a classe se preenchido
+            Peso HAND (0 a 1) — preenchido pela classe; edite para sobrepor
             <input className={inputClass()} type="number" min={0} max={1} step={0.05} value={form.hand_risk_weight} onChange={field("hand_risk_weight")} />
           </label>
           <label className="flex flex-col gap-1 text-sm text-slate-300">

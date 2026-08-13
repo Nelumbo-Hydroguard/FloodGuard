@@ -4,7 +4,7 @@
 
 - [ ] `git checkout main`
 - [ ] `git pull origin main`
-- [ ] Backend: rodar testes (`pytest`) — confirmar **62 de 62 passando**
+- [ ] Backend: rodar testes (`pytest`) — confirmar **65 de 65 passando**
 - [ ] Frontend: rodar build (`npm run build`) — confirmar sem erro
 - [ ] Verificar portas 8000 e 5173 livres (matar processo antigo se preciso)
 - [ ] Confirmar internet ativa (mapa-base OpenStreetMap depende disso)

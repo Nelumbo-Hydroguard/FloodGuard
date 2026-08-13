@@ -19,7 +19,7 @@ sobre os 3 cenários fixos de app.routers.scenarios.
 
 import json
 import logging
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
@@ -55,12 +55,18 @@ _POSTGIS_UNAVAILABLE_DETAIL = (
 )
 
 
-def _raise_postgis_unavailable(exc: Exception) -> None:
+def _raise_postgis_unavailable(exc: Exception) -> NoReturn:
     """Converte falha de banco em 503 controlado, sem vazar credencial.
 
     Loga só o tipo da exceção (não a mensagem completa): a string do driver
     costuma trazer host/porta/usuário do Postgres — mesmo cuidado já
     aplicado em get_demo_map() desde a F6.
+
+    Anotado como `NoReturn` (F9): esta função sempre levanta, e os callers
+    dependem disso para seguir usando variáveis atribuídas dentro do `try`.
+    Sem a anotação, um type checker marca essas variáveis como possivelmente
+    não-vinculadas — e uma futura alteração que fizesse a função retornar em
+    vez de levantar viraria um `UnboundLocalError` silencioso.
     """
     logger.warning("geo: PostGIS indisponível (%s) — respondendo 503.", type(exc).__name__)
     raise HTTPException(status_code=503, detail=_POSTGIS_UNAVAILABLE_DETAIL) from exc
@@ -291,6 +297,23 @@ def get_point_risk_context(
     }
 
 
+def _static_fallback_map(message: str) -> dict:
+    """Resposta padrão do demo-map quando o PostGIS não pode servir os dados.
+
+    Usada tanto quando o banco não responde quanto quando ele responde mas
+    `hand_zones` está vazia — nos dois casos a demo do mapa continua com as
+    camadas estáticas de apps/web/public/geo/.
+    """
+    return {
+        "status": "degraded",
+        "source": "static_fallback",
+        "boundary_available": True,
+        "hand_zones_available": True,
+        "stats": _STATIC_HAND_STATS,
+        "message": message,
+    }
+
+
 @router.get("/demo-map")
 def get_demo_map():
     """
@@ -304,51 +327,59 @@ def get_demo_map():
     mapa — a geometria em si, no caminho de fallback, vem dos arquivos
     estáticos em apps/web/public/geo/ (gerados por
     services/geo/scripts/generate_web_geojson.py), não desta resposta.
+
+    F9: o caso "banco no ar, mas `hand_zones` vazia" caía num RuntimeError
+    que o `except SQLAlchemyError` não capturava — o endpoint respondia 500
+    e o frontend derrubava a página inteira do mapa, em vez de usar o
+    fallback. Esse é justamente o estado de quem sobe o `docker compose up`
+    do README (migrations criam as tabelas vazias) sem rodar
+    `export_to_postgis.py export-all`. Agora tabela vazia é tratada como
+    indisponibilidade de dado, não como erro.
     """
+    query = text("SELECT class_id, class_label, susceptibility, risk_weight, area_m2 FROM hand_zones ORDER BY class_id")
     try:
-        query = text("SELECT class_id, class_label, susceptibility, risk_weight, area_m2 FROM hand_zones ORDER BY class_id")
         with engine.connect() as conn:
             rows = [dict(r) for r in conn.execute(query).mappings().all()]
-        if not rows:
-            raise RuntimeError("tabela hand_zones está vazia — export_to_postgis.py export-all não rodou")
-
-        total_area = sum(float(r["area_m2"] or 0) for r in rows)
-        stats = [
-            {
-                "class_id": r["class_id"],
-                "class_label": r["class_label"],
-                "susceptibility": r["susceptibility"],
-                "risk_weight": float(r["risk_weight"]),
-                "total_area_m2": float(r["area_m2"] or 0),
-                "percent_area": round(float(r["area_m2"] or 0) / total_area * 100, 2) if total_area else None,
-            }
-            for r in rows
-        ]
-        return {
-            "status": "ok",
-            "source": "postgis",
-            "boundary_available": True,
-            "hand_zones_available": True,
-            "stats": stats,
-            "message": "Dados lidos do PostGIS (services/geo, F2).",
-        }
     except SQLAlchemyError as exc:
         # Não repassar a exceção crua ao cliente — a mensagem do driver pode
         # incluir host/porta/usuário do Postgres. Log local só com o tipo,
         # não a exceção completa (evita vazar credencial em log também).
         logger.warning("geo/demo-map: PostGIS indisponível (%s) — usando fallback estático.", type(exc).__name__)
-        return {
-            "status": "degraded",
-            "source": "static_fallback",
-            "boundary_available": True,
-            "hand_zones_available": True,
-            "stats": _STATIC_HAND_STATS,
-            "message": (
-                "PostGIS indisponível neste ambiente — usando estatísticas de "
-                "referência e camadas estáticas geradas a partir de data/hand/ "
-                "(ver docs/metodologia-hand.md e apps/web/public/geo/)."
-            ),
+        return _static_fallback_map(
+            "PostGIS indisponível neste ambiente — usando estatísticas de "
+            "referência e camadas estáticas geradas a partir de data/hand/ "
+            "(ver docs/metodologia-hand.md e apps/web/public/geo/)."
+        )
+
+    if not rows:
+        logger.warning("geo/demo-map: hand_zones vazia — usando fallback estático.")
+        return _static_fallback_map(
+            "PostGIS conectado, mas a tabela hand_zones está vazia — usando "
+            "camadas estáticas de apps/web/public/geo/. Para servir o dado do "
+            "banco, rode services/geo/scripts/export_to_postgis.py export-all "
+            "(ver db/seeds/import_hand_blumenau.md)."
+        )
+
+    total_area = sum(float(r["area_m2"] or 0) for r in rows)
+    stats = [
+        {
+            "class_id": r["class_id"],
+            "class_label": r["class_label"],
+            "susceptibility": r["susceptibility"],
+            "risk_weight": float(r["risk_weight"]),
+            "total_area_m2": float(r["area_m2"] or 0),
+            "percent_area": round(float(r["area_m2"] or 0) / total_area * 100, 2) if total_area else None,
         }
+        for r in rows
+    ]
+    return {
+        "status": "ok",
+        "source": "postgis",
+        "boundary_available": True,
+        "hand_zones_available": True,
+        "stats": stats,
+        "message": "Dados lidos do PostGIS (services/geo, F2).",
+    }
 
 
 @router.get("/demo-points")
