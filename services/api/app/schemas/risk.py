@@ -56,6 +56,7 @@ class RiskEvaluationResponse(BaseModel):
     explanation: str
     recommended_action: str
     station_id: str | None = None
+    region: str | None = None
     timestamp: datetime
 
 

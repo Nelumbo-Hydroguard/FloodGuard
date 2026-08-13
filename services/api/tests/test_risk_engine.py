@@ -101,3 +101,15 @@ def test_batch_evaluates_all_readings():
     assert len(results) == 2
     assert results[0].risk_level == "seguro"
     assert results[1].risk_level == "critico"
+
+
+def test_response_echoes_region_from_request():
+    # F6: region passou a vir na resposta — o frontend usa isso em vez de
+    # manter um mapa cenário->região duplicado à parte (ver Alertas.tsx).
+    result = risk_engine.evaluate(_request(region="Itoupava Norte"))
+    assert result.region == "Itoupava Norte"
+
+
+def test_response_region_is_none_when_not_provided():
+    result = risk_engine.evaluate(_request())
+    assert result.region is None

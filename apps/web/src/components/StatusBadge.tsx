@@ -1,23 +1,14 @@
 import type { RiskLevel } from "../lib/api";
-
-const STYLES: Record<RiskLevel, string> = {
-  seguro: "bg-emerald-950 text-emerald-400 border-emerald-800",
-  atencao: "bg-yellow-950 text-yellow-400 border-yellow-800",
-  alerta: "bg-orange-950 text-orange-400 border-orange-800",
-  critico: "bg-red-950 text-red-400 border-red-800",
-};
-
-const LABELS: Record<RiskLevel, string> = {
-  seguro: "Seguro",
-  atencao: "Atenção",
-  alerta: "Alerta",
-  critico: "Crítico",
-};
+import { RISK_THEME } from "../lib/riskTheme";
 
 export function StatusBadge({ level }: { level: RiskLevel }) {
+  const theme = RISK_THEME[level];
   return (
-    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${STYLES[level]}`}>
-      {LABELS[level]}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${theme.badgeClass}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${theme.dotClass}`} />
+      {theme.label}
     </span>
   );
 }

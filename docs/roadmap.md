@@ -51,3 +51,15 @@ gerado com `implemented: false`, sem transmissão física.
 
 - Ingestão de dados reais via broker MQTT dedicado.
 - Armazenamento de telemetria histórica em escala (fora do escopo da PoC).
+
+## Mapa — de fallback estático para PostGIS ao vivo
+
+Desde a F6, `/mapa` já renderiza cartografia real (Leaflet) e nunca fica
+vazio, mas a camada de zonas HAND normalmente vem do fallback estático
+(`apps/web/public/geo/*.geojson`, gerado uma vez a partir de `data/hand/`)
+porque o PostGIS local não está validado end-to-end (F2.1/F7). Quando F7
+rodar `export_to_postgis.py export-all` contra um Postgres real, o mesmo
+mapa passa a consumir `/api/geo/hand-zones` ao vivo automaticamente — não
+precisa de mudança de código, só o banco populado (ver
+`services/api/app/routers/geo.py::get_demo_map`, que já decide a fonte
+sozinho).

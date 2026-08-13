@@ -20,7 +20,7 @@ def scenarios_status():
     return {"module": "scenarios", "status": "active", "source": "simulation"}
 
 
-_DEMO_SCENARIOS = {
+DEMO_SCENARIOS = {
     "seguro": RiskEvaluationRequest(
         latitude=-26.914,
         longitude=-49.077,
@@ -66,6 +66,6 @@ def demo_scenarios():
         "source": "simulation",
         "scenarios": {
             label: risk_engine.evaluate(request).model_dump(mode="json")
-            for label, request in _DEMO_SCENARIOS.items()
+            for label, request in DEMO_SCENARIOS.items()
         },
     }

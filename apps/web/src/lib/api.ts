@@ -8,7 +8,7 @@
  * já em uso desde a F2.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 async function getJSON<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`);
@@ -74,6 +74,7 @@ export interface RiskEvaluationResponse {
   explanation: string;
   recommended_action: string;
   station_id: string | null;
+  region: string | null;
   timestamp: string;
 }
 
@@ -125,4 +126,66 @@ export interface MeshPayload {
 
 export async function buildMeshPayload(rawPayload: Record<string, unknown>) {
   return postJSON<MeshPayload>("/api/telemetry/mesh-payload", rawPayload);
+}
+
+// --- Mapa (F6) — camadas HAND com fallback estático quando PostGIS falha ---
+
+export interface HandZoneStat {
+  class_id: number;
+  class_label: string;
+  susceptibility: string;
+  risk_weight: number;
+  total_area_m2: number;
+  percent_area: number | null;
+}
+
+export interface DemoMapResponse {
+  status: "ok" | "degraded";
+  source: "postgis" | "static_fallback";
+  boundary_available: boolean;
+  hand_zones_available: boolean;
+  stats: HandZoneStat[];
+  message: string;
+}
+
+export async function fetchDemoMap() {
+  return getJSON<DemoMapResponse>("/api/geo/demo-map");
+}
+
+export interface DemoPoint {
+  id: "seguro" | "alerta" | "critico";
+  name: string;
+  lat: number;
+  lon: number;
+  risk_level: RiskLevel;
+  risk_score: number;
+  explanation: string;
+}
+
+export async function fetchDemoPoints() {
+  return getJSON<{ source: string; points: DemoPoint[] }>("/api/geo/demo-points");
+}
+
+/** GeoJSON Feature real do PostGIS — só funciona com `municipalities` populada (F2). */
+export async function fetchMunicipalityBlumenau() {
+  return getJSON<unknown>("/api/geo/municipality/blumenau");
+}
+
+/** GeoJSON FeatureCollection real do PostGIS — só funciona com `hand_zones` populada (F2). */
+export async function fetchHandZonesGeoJSON() {
+  return getJSON<unknown>("/api/geo/hand-zones");
+}
+
+/**
+ * Camadas estáticas geradas por services/geo/scripts/generate_web_geojson.py
+ * a partir de data/hand/ — servidas como arquivo puro pelo Vite
+ * (apps/web/public/geo/), sem passar pela API. Usadas como fallback do
+ * mapa quando o PostGIS não responde (ver RiskMap.tsx).
+ */
+export async function fetchStaticGeoJSON(filename: string) {
+  const response = await fetch(`/geo/${filename}`);
+  if (!response.ok) {
+    throw new Error(`Arquivo estático /geo/${filename} não encontrado — rode generate_web_geojson.py.`);
+  }
+  return response.json();
 }

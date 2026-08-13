@@ -8,6 +8,7 @@ import { AlertDetail } from "./pages/AlertDetail";
 import { Telemetria } from "./pages/Telemetria";
 import { Shelters } from "./pages/Shelters";
 import { Sobre } from "./pages/Sobre";
+import { NotFound } from "./pages/NotFound";
 
 export function AppRouter() {
   return (
@@ -21,6 +22,9 @@ export function AppRouter() {
         <Route path="/telemetria" element={<Telemetria />} />
         <Route path="/abrigos" element={<Shelters />} />
         <Route path="/sobre" element={<Sobre />} />
+        {/* Catch-all dentro do Layout — mantém nav e dá saída ao usuário
+            em vez de renderizar tela vazia (F6.2.1). */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

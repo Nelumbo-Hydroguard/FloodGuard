@@ -114,6 +114,7 @@ def evaluate(request: RiskEvaluationRequest) -> RiskEvaluationResponse:
         explanation=explanation,
         recommended_action=risk_rules.recommended_action(risk_level),
         station_id=request.station_id,
+        region=request.region,
         timestamp=request.timestamp or datetime.now(timezone.utc),
     )
 

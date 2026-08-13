@@ -3,9 +3,10 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F4 — dashboard web consumindo a API real do
-> motor de risco). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3) e o
-> frontend que os consome (F4) já têm regra de negócio real; `alerts` e
+> Status: em consolidação (Fase F6 — identidade visual, mapa funcional com
+> Leaflet e fallback geoespacial estático, backend de demo resiliente a
+> falha de PostGIS). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3) e o
+> frontend que os consome (F4/F6) já têm regra de negócio real; `alerts` e
 > `shelters` seguem placeholder. Autoria coletiva registrada — ver
 > [docs/autoria-licenca.md](docs/autoria-licenca.md). Este README será
 > atualizado a cada fase.
@@ -217,16 +218,28 @@ Telas:
 | Rota | Consome | O que mostra |
 |---|---|---|
 | `/painel` | `GET /api/risk/status`, `GET /api/scenarios/demo` | 3 cards de risco (seguro/alerta/crítico) com score, confiança, fatores, justificativa e ação recomendada — vindos do motor real, não hardcoded |
-| `/mapa` | `GET /api/geo/status`, `GET /api/geo/hand-zones/summary` | Zonas HAND; fallback explícito ("Camadas HAND disponíveis como artefatos do projeto; conexão PostGIS pendente para ambiente local.") se o banco não tiver sido populado |
-| `/alertas` | `GET /api/scenarios/demo` | Lista de alertas simulados (nível, região, explicação, ação recomendada, horário) derivados dos 3 cenários fixos |
+| `/mapa` | `GET /api/geo/demo-map`, `GET /api/geo/demo-points`, camadas de `/geo/*.geojson` (ou `geo/municipality` + `geo/hand-zones` quando há PostGIS) | Mapa Leaflet com zonas HAND, limite municipal e marcadores de cenário; fallback estático automático quando o banco está fora do ar |
+| `/alertas` | `GET /api/scenarios/demo` | Lista de eventos simulados (nível, região, explicação, ação recomendada, horário) derivados dos 3 cenários fixos |
 | `/telemetria` | `POST /api/risk/evaluate`, `POST /api/telemetry/mesh-payload` | Formulário para testar o motor de risco com valores livres; botão separado gera o payload UniMesh/LoRa simulado (`implemented: false`) |
+| `/abrigos` | — (estático, F6.2.1) | 3 abrigos **simulados** com capacidade/ocupação/status — dados fixos no frontend, sem banco e sem API; CRUD real é F7 |
 | `/sobre` | — (estático) | GovTech B2G, Defesa Civil, Blumenau/SC, HAND = suscetibilidade, motor = PoC explicável, U-RNN = roadmap |
+| `*` (qualquer rota desconhecida) | — (estático, F6.2.1) | Página 404 dentro do Layout, com nav e atalhos — nunca mais tela vazia |
 
 Endpoints reais consumidos pelo frontend (todos com prefixo `/api/`, exceto
-`/health`): `geo/status`, `geo/hand-zones/summary`, `risk/status`,
-`risk/evaluate`, `scenarios/demo`, `telemetry/mesh-payload`.
-`risk/evaluate-batch`, `telemetry/normalize` e `geo/{municipality,basins}`
-existem na API mas não têm consumidor dedicado no frontend ainda.
+`/health`): `geo/demo-map`, `geo/demo-points`, `geo/municipality/blumenau`,
+`geo/hand-zones`, `risk/status`, `risk/evaluate`, `scenarios/demo`,
+`telemetry/mesh-payload`. `risk/evaluate-batch`, `telemetry/normalize`,
+`geo/hand-zones/summary` e `geo/basins/blumenau` existem na API mas não têm
+consumidor dedicado no frontend ainda.
+
+**Comportamento sem PostGIS (F6.2.1).** `GET /api/geo/status` reporta o
+estado real do banco (`connected` só com PostGIS respondendo *e*
+`hand_zones` populada; caso contrário `degraded`/`unavailable`) e nunca
+devolve 500. Os 5 endpoints que leem o banco
+(`municipality/blumenau`, `basins/blumenau`, `hand-zones`,
+`hand-zones/summary`, `point-risk-context`) respondem **503** com mensagem
+acionável em vez de 500 cru. `demo-map` e `demo-points` continuam
+funcionando sempre.
 
 Componentes novos: `RiskCard`, `StatusBadge`, `FactorBar`
 (`apps/web/src/components/`) — reutilizados em `/painel`, `/alertas` e
@@ -234,16 +247,90 @@ Componentes novos: `RiskCard`, `StatusBadge`, `FactorBar`
 
 **Limitações conhecidas:**
 
-- Região dos alertas simulados (`/alertas`) é mapeada no frontend
-  (`SCENARIO_REGION` em `Alertas.tsx`), espelhando os cenários fixos do
-  backend (`app/routers/scenarios.py`) — o `RiskEvaluationResponse` não
-  carrega região. Se o backend mudar a região de um cenário, esse mapa
-  precisa ser atualizado também.
-- `/mapa` ainda não renderiza cartografia (Leaflet) — mostra os cards de
-  resumo por classe HAND. Renderização de mapa real segue como próximo
-  passo.
+- ~~Região dos alertas simulados mapeada à mão no frontend~~ — corrigido na
+  F6: `RiskEvaluationResponse` agora carrega `region` (eco do que veio no
+  request), `Alertas.tsx` usa `result.region` direto, sem mapa duplicado.
+- ~~`/mapa` sem cartografia~~ — corrigido na F6: Leaflet real, com fallback
+  geoespacial estático (ver seção F6 abaixo).
 - Nenhuma tela usa `evaluate-batch` — cada avaliação em `/telemetria` é uma
   chamada individual a `/api/risk/evaluate`.
+
+## F6 — identidade visual, mapa funcional e backend de demo
+
+Objetivo: elevar a PoC pra qualidade de demonstração — visual de centro de
+operações GovTech, mapa que funciona mesmo sem PostGIS, backend que nunca
+quebra o frontend por falha de banco.
+
+### Identidade visual
+
+Paleta centralizada em `apps/web/tailwind.config.ts` (tokens `navy`,
+`accent`, `risk`) e `apps/web/src/lib/riskTheme.ts` (cor/label por
+`RiskLevel`) — nenhum componente redefine cor de risco por conta própria.
+Componentes novos: `PageHeader`, `SectionCard`, `MetricCard`, `DemoNotice`,
+`EmptyState`, `ErrorState`, `RiskLegend`, `MapLegend`. `Layout.tsx` ganhou
+estado ativo de navegação e badge fixo "Modo demo — dados simulados".
+
+### Mapa funcional sem PostGIS
+
+`/mapa` agora renderiza cartografia real com **Leaflet** (`leaflet` +
+`react-leaflet`, ~50 KB gzip): limite de Blumenau, 4 zonas de suscetibilidade
+HAND coloridas (mesma escala verde→vermelho do resto da plataforma:
+`muito_baixa`→seguro, `baixa`→atenção, `media`→alerta, `alta`→crítico),
+marcadores dos 3 cenários demo com popup, e legenda fixa no canto.
+
+**Fonte da geometria, em ordem de tentativa:**
+1. `GET /api/geo/demo-map` diz se o PostGIS está respondendo (`source: "postgis"` ou `"static_fallback"`).
+2. Se `postgis`: busca `/api/geo/municipality/blumenau` e `/api/geo/hand-zones` (dado real).
+3. Se `static_fallback` (ou a busca acima falhar): carrega
+   `apps/web/public/geo/blumenau_boundary.geojson` e
+   `blumenau_hand_zones_simplified.geojson` — arquivos estáticos servidos
+   pelo Vite, gerados por
+   `services/geo/scripts/generate_web_geojson.py` a partir de `data/hand/`.
+
+O mapa **nunca fica vazio**: os marcadores de cenário vêm de
+`GET /api/geo/demo-points`, que roda o motor de risco real e não depende de
+banco — sempre disponíveis, com ou sem PostGIS.
+
+Para regenerar os arquivos estáticos (se os dados HAND mudarem):
+```bash
+cd services/geo
+.venv/bin/python scripts/generate_web_geojson.py
+```
+Tamanho total gerado: ~7,3 MB (limite pedido: <10 MB; `blumenau_hand_zones_simplified.geojson`,
+o maior, tem ~6,4 MB — simplificado de ~48 MB brutos com
+`simplify(0.0005, preserve_topology=False)`; `preserve_topology=True` foi
+testado e trava, > 3 min sem terminar, na geometria real).
+
+### Backend de demo
+
+Dois endpoints novos em `services/api/app/routers/geo.py`, nenhum exige
+banco para responder 200:
+
+| Endpoint | Depende de PostGIS? | O que faz |
+|---|---|---|
+| `GET /api/geo/demo-map` | Tenta, cai em fallback | Status + estatísticas das 4 classes HAND — `source: "postgis"` (dado real) ou `"static_fallback"` (números de referência da F2, mesmos do `hand_classes_stats.json`) |
+| `GET /api/geo/demo-points` | Não | 3 pontos dos cenários fixos, rodados pelo motor de risco real (mesma fonte de `/api/scenarios/demo`) |
+
+`demo-map` nunca retorna 500 nem expõe credencial de banco na mensagem de
+erro — só loga o tipo da exceção no servidor. Testado em
+`services/api/tests/test_geo_demo.py`.
+
+### Consistência de dados
+
+`RiskEvaluationResponse` passou a carregar `region` (eco do que veio no
+request) — `Alertas.tsx` usa isso direto, sem mais duplicar a região dos
+cenários fixos no frontend. `/painel`, `/alertas` e `/mapa` usam os mesmos
+4 níveis de risco e a mesma paleta (`riskTheme.ts`).
+
+### Telas atualizadas
+
+| Rota | O que mudou na F6 |
+|---|---|
+| `/sobre` | Blocos "Implementado / Simulado / Roadmap" lado a lado |
+| `/painel` | Indicadores (cenários avaliados, maior risco, confiança média, comunicação simulada) + "próxima ação recomendada" |
+| `/telemetria` | Atalhos de cenário (seguro/alerta/crítico), payload mesh em bloco separado com selo `implemented: false` |
+| `/alertas` | Filtro por nível, região vinda da API (não mais duplicada no frontend) |
+| `/mapa` | Cartografia Leaflet real + fallback estático, nunca vazio |
 
 ## Como rodar localmente
 
