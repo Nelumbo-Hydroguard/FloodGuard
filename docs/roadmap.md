@@ -47,6 +47,26 @@ gerado com `implemented: false`, sem transmissão física.
 - Gestão operacional pós-evento (relatórios de prestação de contas, rotas de
   evacuação, equipes de resgate).
 
+## Alertas e abrigos — de simulado para persistido
+
+Desde a F7, `/api/alerts/demo` e `/api/shelters/demo` já respondem com
+formato estável e consumível pelo frontend, mas sem gravar nada — cada
+chamada recalcula os alertas em memória e a lista de abrigos é fixa no
+código (`services/api/app/routers/{alerts,shelters}.py`). Falta para virar
+funcionalidade real:
+
+- Persistir alertas emitidos de verdade na tabela `alerts`
+  (`db/migrations/002_core_tables.sql`), com autoria de um operador da
+  Defesa Civil autenticado — hoje não existe autenticação nem emissão manual.
+- Persistir abrigos cadastrados na tabela `shelters`, com atualização de
+  ocupação em tempo real pelo operador.
+- Fila de solicitações de cadastro de abrigo enviadas pelo cidadão
+  (`shelter_requests`), com triagem — hoje só o schema existe, sem endpoint
+  de escrita.
+- Vincular abrigos reais e confirmados a uma instituição específica (hoje os
+  nomes são genéricos de propósito — "Abrigo Municipal Simulado" — para não
+  sugerir vínculo real sem confirmação).
+
 ## Infraestrutura
 
 - Ingestão de dados reais via broker MQTT dedicado.

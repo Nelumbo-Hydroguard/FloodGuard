@@ -43,7 +43,14 @@ export function MapLegend() {
       <p className="font-semibold uppercase tracking-wider text-slate-500 text-[10px] mb-1">
         Marcadores
       </p>
-      <p className="text-slate-400">Cenários simulados (seguro/alerta/crítico) — clique para detalhes.</p>
+      <span className="flex items-center gap-1.5 mb-1">
+        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: "#94a3b8" }} />
+        Cenários simulados (seguro/alerta/crítico)
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 shrink-0" style={{ background: "#22d3ee", transform: "rotate(45deg)" }} />
+        Abrigos simulados
+      </span>
     </div>
   );
 }

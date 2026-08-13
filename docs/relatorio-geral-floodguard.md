@@ -10,6 +10,13 @@
 > [README.md](../README.md#f6--identidade-visual-mapa-funcional-e-backend-de-demo)).
 > Mantido abaixo como registro histórico do estado na F5, não editado
 > ponto a ponto para não distorcer o que foi auditado naquele momento.
+>
+> **Atualização F7:** as seções 8, 10 e 13 abaixo listam `alerts.py` e
+> `shelters.py` como placeholder e `/alertas`/`/abrigos` como pendentes de
+> API real — isso foi corrigido na F7 (`GET /api/alerts/demo`,
+> `/api/alerts/demo/{id}`, `GET /api/shelters/demo`, ambos simulados e sem
+> persistência, ver [README.md](../README.md#f7--alertas-e-abrigos-simulados)).
+> Idem: não editado ponto a ponto abaixo.
 
 ## 1. Visão executiva
 

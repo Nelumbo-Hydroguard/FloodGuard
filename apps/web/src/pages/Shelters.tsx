@@ -1,115 +1,97 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchDemoShelters, type DemoShelter } from "../lib/api";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { DemoNotice } from "../components/DemoNotice";
 import { MetricCard } from "../components/MetricCard";
+import { ErrorState } from "../components/ErrorState";
+import { EmptyState } from "../components/EmptyState";
 
 /**
- * `/abrigos` — tela demonstrativa (F6.2.1).
- *
- * IMPORTANTE: estes abrigos são DADOS FIXOS DE FRONTEND, temporários. Não
- * vêm do banco e não passam pela API — o router `shelters.py` continua
- * placeholder e a tabela `shelters` (db/migrations/002_core_tables.sql)
- * continua vazia. O CRUD real (cadastro, ocupação em tempo real, triagem de
- * solicitações do cidadão) é item da F7.
- *
- * Até a F6.2 esta página era um parágrafo solto numa tela 90% vazia, mas
- * aparecia no menu com o mesmo peso das telas reais — a auditoria apontou
- * que isso passa impressão de produto quebrado. A escolha aqui foi mostrar
- * uma tela honesta e legível em vez de esconder o item do menu, deixando o
- * caráter simulado explícito em todos os pontos da interface.
+ * `/abrigos` — F7: consome `/api/shelters/demo` (lista fixa em memória no
+ * backend, sem persistência — ver app/routers/shelters.py). Antes da F7
+ * esta tela usava dados fixos no próprio frontend; agora o frontend só
+ * exibe o que a API manda, mesmo que a API também seja "só" uma simulação.
  */
 
-interface SimulatedShelter {
-  id: string;
-  name: string;
-  address: string;
-  capacity: number;
-  currentOccupancy: number;
-  status: "disponivel" | "lotando" | "lotado";
-}
-
-// Locais reais e conhecidos de Blumenau usados como rótulo plausível; a
-// ocupação/capacidade abaixo é inventada para a demo, não é dado oficial da
-// Defesa Civil nem reflete abrigo ativo.
-const SIMULATED_SHELTERS: SimulatedShelter[] = [
-  {
-    id: "sim-abrigo-001",
-    name: "Ginásio Sebastião Cruz (simulado)",
-    address: "Bairro Velha, Blumenau/SC",
-    capacity: 220,
-    currentOccupancy: 84,
-    status: "disponivel",
-  },
-  {
-    id: "sim-abrigo-002",
-    name: "Escola Municipal Itoupava (simulado)",
-    address: "Itoupava Norte, Blumenau/SC",
-    capacity: 150,
-    currentOccupancy: 131,
-    status: "lotando",
-  },
-  {
-    id: "sim-abrigo-003",
-    name: "Centro Comunitário Garcia (simulado)",
-    address: "Bairro Garcia, Blumenau/SC",
-    capacity: 90,
-    currentOccupancy: 90,
-    status: "lotado",
-  },
-];
-
-const STATUS_STYLE: Record<SimulatedShelter["status"], { label: string; className: string }> = {
-  disponivel: { label: "Disponível", className: "bg-risk-safe/10 text-risk-safe border-risk-safe/40" },
-  lotando: { label: "Quase lotado", className: "bg-risk-alert/10 text-risk-alert border-risk-alert/40" },
-  lotado: { label: "Lotado", className: "bg-risk-critical/10 text-risk-critical border-risk-critical/40" },
+const STATUS_STYLE: Record<string, { label: string; className: string; barClass: string }> = {
+  disponivel: { label: "Disponível", className: "bg-risk-safe/10 text-risk-safe border-risk-safe/40", barClass: "bg-risk-safe" },
+  moderado: { label: "Ocupação moderada", className: "bg-risk-attention/10 text-risk-attention border-risk-attention/40", barClass: "bg-risk-attention" },
+  quase_lotado: { label: "Quase lotado", className: "bg-risk-alert/10 text-risk-alert border-risk-alert/40", barClass: "bg-risk-alert" },
+  indisponivel: { label: "Indisponível", className: "bg-slate-500/10 text-slate-400 border-slate-500/40", barClass: "bg-slate-600" },
 };
 
-function occupancyBarClass(ratio: number): string {
-  if (ratio >= 1) return "bg-risk-critical";
-  if (ratio >= 0.8) return "bg-risk-alert";
-  return "bg-risk-safe";
+function statusStyleFor(status: string) {
+  return STATUS_STYLE[status] ?? { label: status, className: "bg-navy-700 text-slate-300 border-navy-600", barClass: "bg-slate-500" };
 }
 
 export function Shelters() {
-  const totalCapacity = SIMULATED_SHELTERS.reduce((sum, s) => sum + s.capacity, 0);
-  const totalOccupancy = SIMULATED_SHELTERS.reduce((sum, s) => sum + s.currentOccupancy, 0);
-  const available = totalCapacity - totalOccupancy;
+  const [shelters, setShelters] = useState<DemoShelter[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDemoShelters()
+      .then((data) => setShelters(data.shelters))
+      .catch(() => setError("Não foi possível carregar os abrigos simulados. A API está rodando?"));
+  }, []);
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Abrigos" description="Abrigos simulados para demonstração." />
+        <ErrorState message={error} />
+      </div>
+    );
+  }
+
+  const list = shelters ?? [];
+  const totalCapacity = list.reduce((sum, s) => sum + s.capacity_total, 0);
+  const totalOccupancy = list.reduce((sum, s) => sum + s.capacity_used, 0);
+  const available = list
+    .filter((s) => s.status !== "indisponivel")
+    .reduce((sum, s) => sum + (s.capacity_total - s.capacity_used), 0);
 
   return (
     <div>
       <PageHeader
-        title="Abrigos e solicitações"
-        description="Capacidade e ocupação de abrigos — tela demonstrativa com dados fixos, sem persistência."
+        title="Abrigos"
+        description="Dados simulados para demonstração — capacidade e ocupação de abrigos de apoio, consumidos de /api/shelters/demo."
       />
 
       <div className="mb-4">
         <DemoNotice>
-          Os abrigos abaixo são <strong className="text-slate-300">inteiramente simulados</strong> e
-          estão fixos no frontend — não vêm do banco, não passam pela API e não
-          representam abrigos ativos da Defesa Civil de Blumenau. Cadastro real,
-          ocupação em tempo real e triagem de solicitações são item da{" "}
-          <strong className="text-slate-300">F7</strong>.
+          Estes abrigos são <strong className="text-slate-300">inteiramente simulados</strong> — nomes
+          genéricos, sem vínculo confirmado com instituição real, sem persistência em
+          banco. Relacionados aos eventos simulados em{" "}
+          <Link to="/alertas" className="text-accent underline underline-offset-2">
+            Alertas
+          </Link>
+          .
         </DemoNotice>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard label="Abrigos simulados" value={String(SIMULATED_SHELTERS.length)} hint="dados fixos de demo" />
-        <MetricCard label="Capacidade total" value={String(totalCapacity)} hint="pessoas" />
-        <MetricCard label="Ocupação atual" value={String(totalOccupancy)} hint="pessoas acolhidas" />
-        <MetricCard
-          label="Vagas restantes"
-          value={String(available)}
-          accentClass={available > 0 ? "text-risk-safe" : "text-risk-critical"}
-          hint="somando os 3 abrigos"
-        />
-      </div>
+      {list.length === 0 && !error && (
+        <EmptyState title="Carregando abrigos…" description="Consultando /api/shelters/demo." />
+      )}
+
+      {list.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <MetricCard label="Abrigos simulados" value={String(list.length)} hint="via API, sem persistência" />
+          <MetricCard label="Capacidade total" value={String(totalCapacity)} hint="pessoas" />
+          <MetricCard label="Ocupação atual" value={String(totalOccupancy)} hint="pessoas acolhidas" />
+          <MetricCard
+            label="Vagas restantes"
+            value={String(available)}
+            accentClass={available > 0 ? "text-risk-safe" : "text-risk-critical"}
+            hint="exclui abrigos indisponíveis"
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 mb-6">
-        {SIMULATED_SHELTERS.map((shelter) => {
-          const ratio = shelter.currentOccupancy / shelter.capacity;
-          const percent = Math.round(ratio * 100);
-          const status = STATUS_STYLE[shelter.status];
-
+        {list.map((shelter) => {
+          const style = statusStyleFor(shelter.status);
           return (
             <div key={shelter.id} className="border border-navy-700 bg-navy-900 rounded p-4">
               <div className="flex items-start justify-between gap-2 mb-3">
@@ -120,27 +102,30 @@ export function Shelters() {
                       simulado
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">{shelter.address}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {shelter.address} · Região: {shelter.region}
+                  </p>
                 </div>
                 <span
-                  className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide shrink-0 ${status.className}`}
+                  className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide shrink-0 ${style.className}`}
                 >
-                  {status.label}
+                  {style.label}
                 </span>
               </div>
 
               <div className="flex justify-between text-xs text-slate-400 mb-1">
                 <span>Ocupação</span>
                 <span className="font-mono tabular-nums">
-                  {shelter.currentOccupancy} / {shelter.capacity} ({percent}%)
+                  {shelter.capacity_used} / {shelter.capacity_total} ({shelter.occupancy_percent}%)
                 </span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-navy-700">
+              <div className="h-1.5 w-full rounded-full bg-navy-700 mb-2">
                 <div
-                  className={`h-1.5 rounded-full ${occupancyBarClass(ratio)}`}
-                  style={{ width: `${Math.min(100, percent)}%` }}
+                  className={`h-1.5 rounded-full ${style.barClass}`}
+                  style={{ width: `${Math.min(100, shelter.occupancy_percent)}%` }}
                 />
               </div>
+              <p className="text-xs text-slate-500">{shelter.notes}</p>
             </div>
           );
         })}
@@ -149,12 +134,14 @@ export function Shelters() {
       <SectionCard title="O que falta para isto virar funcionalidade real">
         <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
           <li>
-            Conectar <code className="text-slate-500">app/routers/shelters.py</code> (hoje placeholder)
-            à tabela <code className="text-slate-500">shelters</code>, que já existe no schema PostGIS.
+            Persistir abrigos na tabela <code className="text-slate-500">shelters</code>, que já
+            existe no schema PostGIS (hoje a lista vive só em memória no backend).
           </li>
           <li>Fila de solicitações de cadastro enviadas por cidadãos, com triagem da Defesa Civil.</li>
           <li>Atualização de ocupação em tempo real pelo operador.</li>
-          <li>Localização dos abrigos no mapa, cruzada com as zonas HAND.</li>
+          <li>
+            Localização dos abrigos no <Link to="/mapa" className="text-accent underline underline-offset-2">mapa</Link>, cruzada com as zonas HAND.
+          </li>
         </ul>
       </SectionCard>
     </div>

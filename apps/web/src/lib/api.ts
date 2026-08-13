@@ -189,3 +189,73 @@ export async function fetchStaticGeoJSON(filename: string) {
   }
   return response.json();
 }
+
+// --- Alertas simulados (F7) — derivados do motor de risco, sem persistência ---
+
+export interface DemoAlert {
+  id: string;
+  title: string;
+  region: string | null;
+  risk_level: RiskLevel;
+  risk_score: number;
+  confidence: number;
+  explanation: string;
+  recommended_action: string;
+  status: string;
+  timestamp: string;
+  source: string;
+  simulated: boolean;
+  suggested_next_step: string | null;
+}
+
+export interface DemoAlertsResponse {
+  source: string;
+  alerts: DemoAlert[];
+}
+
+export async function fetchAlertsStatus() {
+  return getJSON<{ module: string; status: string; source: string; persistence: boolean; message: string }>(
+    "/api/alerts/status",
+  );
+}
+
+export async function fetchDemoAlerts() {
+  return getJSON<DemoAlertsResponse>("/api/alerts/demo");
+}
+
+export async function fetchDemoAlertById(id: string) {
+  return getJSON<DemoAlert>(`/api/alerts/demo/${encodeURIComponent(id)}`);
+}
+
+// --- Abrigos simulados (F7) — lista fixa, sem persistência --------------
+
+export interface DemoShelter {
+  id: string;
+  name: string;
+  region: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  capacity_total: number;
+  capacity_used: number;
+  occupancy_percent: number;
+  status: string;
+  notes: string;
+  source: string;
+  simulated: boolean;
+}
+
+export interface DemoSheltersResponse {
+  source: string;
+  shelters: DemoShelter[];
+}
+
+export async function fetchSheltersStatus() {
+  return getJSON<{ module: string; status: string; source: string; persistence: boolean; message: string }>(
+    "/api/shelters/status",
+  );
+}
+
+export async function fetchDemoShelters() {
+  return getJSON<DemoSheltersResponse>("/api/shelters/demo");
+}

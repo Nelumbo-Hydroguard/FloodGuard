@@ -10,6 +10,16 @@
 > Gerado na F6.0/F6.1, lendo o código-fonte diretamente (não é um resumo do
 > README). Onde algo não pôde ser confirmado lendo o arquivo, está marcado
 > como "inferido" ou "pendente de validação" — nada foi inventado.
+>
+> **Atualização F7:** as entradas abaixo para `app/routers/alerts.py`,
+> `app/routers/shelters.py`, `app/schemas/alerts.py`, `app/schemas/shelters.py`,
+> `apps/web/src/pages/Alertas.tsx`, `AlertDetail.tsx` e `Shelters.tsx`
+> mudam de status **Pendente → Simulado**: ganharam endpoints/telas reais de
+> demonstração (`GET /api/alerts/demo`, `/api/alerts/demo/{id}`,
+> `GET /api/shelters/demo`), sem persistência em banco. Ver seção "F7" do
+> [README.md](../README.md#f7--alertas-e-abrigos-simulados) para o resumo
+> atualizado — este arquivo não foi reescrito linha a linha para preservar
+> o registro do estado na F6.
 
 ## Convenção de status usada abaixo
 

@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import L from "leaflet";
 import { GeoJSON, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import {
   fetchDemoMap,
   fetchDemoPoints,
+  fetchDemoShelters,
   fetchHandZonesGeoJSON,
   fetchMunicipalityBlumenau,
   fetchStaticGeoJSON,
   type DemoMapResponse,
   type DemoPoint,
+  type DemoShelter,
 } from "../lib/api";
 import { RISK_THEME, type RiskTheme } from "../lib/riskTheme";
 import type { RiskLevel } from "../lib/api";
@@ -46,9 +49,21 @@ function pointIcon(theme: RiskTheme) {
   });
 }
 
+// Ícone quadrado (não círculo) pra abrigo nunca ser confundido visualmente
+// com um ponto de cenário de risco — são camadas de natureza diferente.
+function shelterIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:14px;height:14px;background:#22d3ee;border:2px solid #040b14;transform:rotate(45deg);"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
+
 export function RiskMap() {
   const [demoMap, setDemoMap] = useState<DemoMapResponse | null>(null);
   const [points, setPoints] = useState<DemoPoint[] | null>(null);
+  const [shelters, setShelters] = useState<DemoShelter[] | null>(null);
   const [boundary, setBoundary] = useState<GeoJsonObject | null>(null);
   const [handZones, setHandZones] = useState<GeoJsonObject | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -64,6 +79,13 @@ export function RiskMap() {
         // demo-points não depende de banco — se isso falhar, é a API
         // inteira fora do ar, já coberto pelo erro de fetchDemoMap acima.
       });
+
+    // Camada opcional de abrigos (F7) — busca independente das camadas
+    // geoespaciais acima; se falhar, o mapa continua funcionando sem os
+    // marcadores de abrigo, não derruba boundary/hand-zones/pontos.
+    fetchDemoShelters()
+      .then((data) => setShelters(data.shelters))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -203,6 +225,18 @@ export function RiskMap() {
               </Popup>
             </Marker>
           ))}
+
+          {shelters?.map((shelter) => (
+            <Marker key={shelter.id} position={[shelter.latitude, shelter.longitude]} icon={shelterIcon()}>
+              <Popup>
+                <strong>{shelter.name}</strong> <em style={{ fontSize: "0.8em" }}>(simulado)</em>
+                <br />
+                Ocupação: {shelter.capacity_used}/{shelter.capacity_total} ({shelter.occupancy_percent}%)
+                <br />
+                <span style={{ fontSize: "0.85em" }}>{shelter.notes}</span>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
 
         <MapLegend />
@@ -233,6 +267,19 @@ export function RiskMap() {
           usam a mesma escala de risco do resto da plataforma (verde =
           seguro, vermelho = crítico) aplicada à suscetibilidade de cada
           zona. Detalhes: <code className="text-slate-500">docs/metodologia-hand.md</code>.
+        </p>
+      </SectionCard>
+
+      <SectionCard title="Abrigos simulados" className="mt-4">
+        <p className="text-sm text-slate-400">
+          Os marcadores <span className="inline-block h-2.5 w-2.5 bg-accent align-middle" style={{ transform: "rotate(45deg)" }} />{" "}
+          (losango ciano) no mapa são abrigos simulados — mesma fonte de{" "}
+          <Link to="/abrigos" className="text-accent underline underline-offset-2">
+            /abrigos
+          </Link>
+          , sem persistência em banco. Clique num marcador para ver ocupação
+          e status, ou acesse a lista completa com filtros na página de
+          Abrigos.
         </p>
       </SectionCard>
     </div>
