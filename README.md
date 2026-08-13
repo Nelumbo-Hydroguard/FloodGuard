@@ -3,13 +3,16 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F7 — alertas e abrigos simulados via API,
-> sem persistência). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3),
-> `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7) já têm
-> regra de negócio real ou simulação consistente ponta a ponta — nenhum
-> ainda persiste dado em banco. Autoria coletiva registrada — ver
-> [docs/autoria-licenca.md](docs/autoria-licenca.md). Este README será
-> atualizado a cada fase.
+> Status: em consolidação (Fase F8 — documentação final e preparação de
+> apresentação, sem feature nova). `geo` (F2), `risk`/`telemetry`/`scenarios`
+> (F3), `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7) já
+> têm regra de negócio real ou simulação consistente ponta a ponta — nenhum
+> ainda persiste dado em banco. **62 de 62 testes de backend passando.**
+> Autoria coletiva registrada — ver
+> [docs/autoria-licenca.md](docs/autoria-licenca.md). Documentação de
+> apresentação: [docs/resumo-executivo-floodguard.md](docs/resumo-executivo-floodguard.md),
+> [docs/roteiro-demo-floodguard.md](docs/roteiro-demo-floodguard.md). Este
+> README será atualizado a cada fase.
 
 ## O que é?
 
@@ -193,11 +196,12 @@ bloqueada por falta de acesso a Docker/PostGIS local:
   /api/risk/evaluate-batch`, `GET /api/scenarios/demo` (3 cenários fixos
   rodados pelo motor real), `POST /api/telemetry/normalize`, `POST
   /api/telemetry/mesh-payload`.
-- **27 testes unitários** (`services/api/tests/`), todos passando sem
-  Postgres: score sempre entre 0 e 1, crítico quando todos os fatores estão
-  altos, seguro quando todos estão baixos, fallback funciona, explicação
-  muda com os fatores, payload mesh sempre `implemented: false`, todos os
-  endpoints novos respondem.
+- **27 testes unitários** entregues nesta fase (`services/api/tests/`) —
+  total atual do projeto é 62/62 (F3+F6+F7, ver seção F8 abaixo), todos
+  passando sem Postgres: score sempre entre 0 e 1, crítico quando todos os
+  fatores estão altos, seguro quando todos estão baixos, fallback funciona,
+  explicação muda com os fatores, payload mesh sempre `implemented: false`,
+  todos os endpoints novos respondem.
 
 Fórmula completa, fatores, exemplos reais e créditos:
 [docs/motor-de-risco.md](docs/motor-de-risco.md).
@@ -382,6 +386,22 @@ o produto, coordenadas reaproveitadas, não inventadas soltas.
   real de Blumenau — os nomes são genéricos de propósito.
 - Cadastro de abrigo pelo cidadão e triagem pelo operador seguem roadmap
   (`docs/roadmap.md`).
+
+## F8 — documentação final e preparação de apresentação
+
+Sem feature nova — objetivo desta fase é consolidar documentação para
+avaliação acadêmica (SENAI) e para apresentação ao vivo:
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/plano-desenvolvimento-senai-floodguard.md](docs/plano-desenvolvimento-senai-floodguard.md) | Documento acadêmico completo — introdução, produto, arquitetura, requisitos (RF/RNF), dados, validação, gerenciamento, riscos, cronograma, limitações e roadmap |
+| [docs/roteiro-demo-floodguard.md](docs/roteiro-demo-floodguard.md) | Roteiro de demo de 10 minutos, ordem de telas, o que falar em cada uma, respostas para perguntas prováveis, plano B, frases a evitar/usar |
+| [docs/checklist-apresentacao-floodguard.md](docs/checklist-apresentacao-floodguard.md) | Checklist prático — comandos, URLs, o que conferir antes de apresentar |
+| [docs/resumo-executivo-floodguard.md](docs/resumo-executivo-floodguard.md) | 1 página — problema, solução, diferencial, arquitetura, estado atual, validação, limitações, próximos passos |
+
+Estado validado nesta fase: **62 de 62 testes de backend passando**,
+`npm run build` do frontend limpo, todos os endpoints e rotas de F0–F7
+respondendo como esperado.
 
 ## Como rodar localmente
 
