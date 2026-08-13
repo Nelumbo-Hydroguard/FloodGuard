@@ -4,7 +4,7 @@
 
 - [ ] `git checkout main`
 - [ ] `git pull origin main`
-- [ ] Backend: rodar testes (`pytest`) — confirmar **65 de 65 passando**
+- [ ] Backend: rodar testes (`pytest`) — confirmar **67 de 67 passando** (F9.1)
 - [ ] Frontend: rodar build (`npm run build`) — confirmar sem erro
 - [ ] Verificar portas 8000 e 5173 livres (matar processo antigo se preciso)
 - [ ] Confirmar internet ativa (mapa-base OpenStreetMap depende disso)
@@ -42,6 +42,7 @@ Frontend:
 - http://localhost:5173/sobre
 - http://localhost:5173/painel
 - http://localhost:5173/mapa
+- http://localhost:5173/mapa?alert=critico
 - http://localhost:5173/telemetria
 - http://localhost:5173/alertas
 - http://localhost:5173/alertas/critico
@@ -52,12 +53,18 @@ Frontend:
 - [ ] `/sobre` mostra os 3 blocos Implementado/Simulado/Roadmap
 - [ ] `/painel` mostra os 4 indicadores e os 3 cards de cenário com score
 - [ ] `/mapa` mostra as 4 zonas coloridas + limite municipal (linha ciano) +
-      marcadores — clicar em pelo menos 1 zona e 1 marcador antes da
-      apresentação para confirmar que os popups abrem
+      marcadores de alerta + marcadores de abrigo — clicar em pelo menos 1
+      zona e 1 marcador de alerta antes da apresentação para confirmar que
+      os popups abrem
+- [ ] `/mapa` — marcador do alerta crítico mostra o anel pulsante (F9.1)
+- [ ] `/mapa?alert=critico` — mapa dá `flyTo` até o marcador crítico e abre
+      o popup automaticamente (F9.1)
 - [ ] `/telemetria` — testar o atalho "Crítico" e confirmar que o resultado
       aparece com score, fatores, explicação e ação recomendada
-- [ ] `/alertas` mostra os filtros e os cards com badge "simulado"
-- [ ] `/alertas/critico` mostra o detalhe completo
+- [ ] `/alertas` mostra os filtros, os cards com badge "simulado" e o link
+      "Ver no mapa →" em cada card (F9.1)
+- [ ] `/alertas/critico` mostra o detalhe completo e o link "Ver no Mapa"
+      leva para `/mapa?alert=critico` com o marcador em destaque (F9.1)
 - [ ] `/abrigos` mostra os 4 perfis de ocupação com cor distinta
 - [ ] Nenhuma tela mostra erro cru (stack trace, tela branca) — se aparecer,
       não é hora de debugar ao vivo, seguir para "O que não mostrar"

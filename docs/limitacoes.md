@@ -53,7 +53,10 @@ documentação pública.
     `shelters` e `alerts` (`db/migrations/002_core_tables.sql`) continuam
     vazias, e nenhum alerta representa uma emissão real da Defesa Civil de
     Blumenau. Persistência real, cadastro pelo cidadão e triagem por
-    operador seguem como roadmap.
+    operador seguem como roadmap. Desde a F9.1, esses mesmos alertas
+    simulados também aparecem como marcadores no `/mapa` (mesma fonte,
+    `services/api/app/routers/alerts.py`) — o aviso de simulação acompanha
+    o marcador no popup, não só a lista.
 
 11. **Cobertura HAND maior que o município.** As zonas HAND cobrem a área
     hidrologicamente contribuinte (sub-bacias que drenam para a região), não

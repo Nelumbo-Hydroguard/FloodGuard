@@ -114,7 +114,7 @@ O que **de fato funciona hoje**, sem PostGIS:
 - `GET /api/scenarios/demo` — 3 cenários fixos rodados pelo motor real, não hardcoded (`scenarios.py`).
 - `POST /api/telemetry/normalize` — normalização de payload bruto simulado, aceita aliases de campo (`telemetry_normalizer.py`).
 - `POST /api/telemetry/mesh-payload` — gera payload UniMesh/LoRa simulado (`mesh_payload.py`).
-- **Testes automatizados** cobrindo motor de risco, normalizador, payload mesh e endpoints da API (`services/api/tests/`), todos passando sem banco — eram 27 na F3, são **65 na F9** (F3 + F6 + F7 + regressões da F9).
+- **Testes automatizados** cobrindo motor de risco, normalizador, payload mesh e endpoints da API (`services/api/tests/`), todos passando sem banco — eram 27 na F3, **65 na F9**, **67 na F9.1** (F3 + F6 + F7 + regressões da F9 + coordenadas de alerta da F9.1).
 - Dashboard: `/painel` (3 cards de risco reais), `/telemetria` (formulário → `POST /risk/evaluate` + geração de payload mesh), `/alertas` (lista derivada de `/scenarios/demo`), `/sobre` (conteúdo estático), `/mapa` com fallback informativo quando PostGIS não está populado.
 
 Com PostGIS configurado (não testado localmente nesta sessão), também
@@ -126,7 +126,7 @@ funcionariam: `GET /api/geo/municipality/blumenau`, `/api/geo/basins/blumenau`,
 - **Telemetria** — toda leitura de sensor é sintética; `source: "simulation"` e `hardware_implemented: false` em todo payload (`services/simulator/simulated_payload_example.json`).
 - **Payload UniMesh/LoRa** — empacotamento simulado, `implemented: false` sempre, mesmo em risco crítico (testado em `test_mesh_payload.py`). Não abre socket, não usa rádio.
 - **Cenários** (`/api/scenarios/demo`) — 3 leituras fixas (seguro/alerta/crítico) definidas em `scenarios.py`, não medições reais.
-- **Alertas** (`/alertas` no frontend) — derivados dos cenários simulados acima, não emitidos pela Defesa Civil de verdade.
+- **Alertas** (`/alertas` no frontend) — derivados dos cenários simulados acima, não emitidos pela Defesa Civil de verdade. Desde a F9.1, os mesmos alertas também aparecem como marcadores clicáveis em `/mapa` (com popup, destaque pulsante no nível crítico, e navegação cruzada `/alertas` ↔ `/mapa?alert=<id>`) — ver `docs/auditoria-mapa-benvenutti-f9-1.md`.
 
 ## 10. Funcionalidades pendentes
 
@@ -354,9 +354,10 @@ Postgres descartável sem a extensão PostGIS instalada.
 
 - FloodGuard: painel de apoio à decisão para Defesa Civil, piloto Blumenau/SC, GovTech B2G.
 - Motor de risco explicável: HAND + chuva + nível d'água + tendência → score, nível, justificativa, ação recomendada.
-- **65 testes automatizados passando** (estado da F9), motor roda sem depender de banco.
+- **67 testes automatizados passando** (estado da F9.1), motor roda sem depender de banco.
 - Backend FastAPI + frontend React/Vite/Tailwind, ambos validados rodando localmente.
 - 8 telas navegáveis + 404 amigável: landing, painel, mapa, telemetria, alertas, detalhe de alerta, abrigos, sobre — todas consumindo API real, não mock hardcoded.
+- Mapa (`/mapa`) com cartografia real (Leaflet): zonas HAND, limite municipal, abrigos e alertas simulados clicáveis, com destaque pulsante no alerta crítico e navegação cruzada com `/alertas` (F6–F9.1).
 - 100% software-only: telemetria simulada, payload UniMesh/LoRa simulado (`implemented: false` sempre), zero hardware.
-- Autoria coletiva (João Benvenutti, Nyrx Oliveira, Pedro Zanette), reaproveitamento do `techguard-sentinela` autorizado e documentado.
-- Pendências honestas: PostGIS real ainda não validado localmente (falta Docker/sudo neste ambiente), mapa sem cartografia (Leaflet não instalado), sem autenticação, sem deploy.
+- Autoria coletiva (João Benvenutti, Nyrx Oliveira, Pedro Zanette); F9.1 analisou o projeto `techguard-sentinela` do Benvenutti como referência de UX de mapa/alerta (sem copiar código), documentado em `docs/auditoria-mapa-benvenutti-f9-1.md`.
+- Pendências honestas: PostGIS real ainda não validado localmente (falta Docker/sudo neste ambiente), sem autenticação, sem deploy.

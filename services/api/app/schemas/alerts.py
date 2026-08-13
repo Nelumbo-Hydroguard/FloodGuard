@@ -32,6 +32,8 @@ class DemoAlert(BaseModel):
     id: str
     title: str
     region: str | None
+    latitude: float
+    longitude: float
     risk_level: RiskLevel
     risk_score: float
     confidence: float

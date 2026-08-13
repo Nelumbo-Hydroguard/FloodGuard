@@ -139,12 +139,20 @@ export function Alertas() {
                 <span className="text-slate-200">{alert.recommended_action}</span>
               </p>
 
-              <Link
-                to={`/alertas/${alert.id}`}
-                className="inline-block text-xs font-semibold text-accent hover:underline underline-offset-2"
-              >
-                Ver detalhes →
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  to={`/alertas/${alert.id}`}
+                  className="inline-block text-xs font-semibold text-accent hover:underline underline-offset-2"
+                >
+                  Ver detalhes →
+                </Link>
+                <Link
+                  to={`/mapa?alert=${alert.id}`}
+                  className="inline-block text-xs font-semibold text-accent hover:underline underline-offset-2"
+                >
+                  Ver no mapa →
+                </Link>
+              </div>
             </div>
           </div>
         ))}

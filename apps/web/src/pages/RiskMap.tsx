@@ -1,27 +1,28 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import L from "leaflet";
-import { GeoJSON, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { GeoJSON, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import {
+  fetchDemoAlerts,
   fetchDemoMap,
-  fetchDemoPoints,
   fetchDemoShelters,
   fetchHandZonesGeoJSON,
   fetchMunicipalityBlumenau,
   fetchStaticGeoJSON,
+  type DemoAlert,
   type DemoMapResponse,
-  type DemoPoint,
   type DemoShelter,
+  type RiskLevel,
 } from "../lib/api";
 import { RISK_THEME, type RiskTheme } from "../lib/riskTheme";
-import type { RiskLevel } from "../lib/api";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { DemoNotice } from "../components/DemoNotice";
 import { MapLegend } from "../components/MapLegend";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
+import { AlertMapPopup } from "../components/AlertMapPopup";
 
 const BLUMENAU_CENTER: [number, number] = [-26.9194, -49.0661];
 
@@ -40,10 +41,19 @@ function themeForSusceptibility(susceptibility: string): RiskTheme {
   return RISK_THEME[level];
 }
 
-function pointIcon(theme: RiskTheme) {
+// Marcador de alerta simulado. Nível "crítico" ganha um anel pulsante
+// (Tailwind `animate-ping`) — ideia inspirada no destaque visual de estado
+// crítico do projeto de referência TechGuard Sentinela (João Benvenutti,
+// ver docs/auditoria-mapa-benvenutti-f9-1.md), reimplementada aqui só com
+// CSS/Tailwind já disponíveis no projeto, sem nova dependência.
+function alertIcon(theme: RiskTheme, level: RiskLevel) {
+  const pulse =
+    level === "critico"
+      ? `<div class="animate-ping" style="position:absolute;inset:-6px;border-radius:9999px;background:${theme.hex};opacity:0.45;"></div>`
+      : "";
   return L.divIcon({
     className: "",
-    html: `<div style="width:16px;height:16px;border-radius:9999px;background:${theme.hex};border:2px solid #040b14;box-shadow:0 0 0 2px ${theme.hex}55;"></div>`,
+    html: `<div style="position:relative;width:16px;height:16px;">${pulse}<div style="position:relative;width:16px;height:16px;border-radius:9999px;background:${theme.hex};border:2px solid #040b14;box-shadow:0 0 0 2px ${theme.hex}55;"></div></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
@@ -60,29 +70,64 @@ function shelterIcon() {
   });
 }
 
+/**
+ * Foca (voa até) e abre o popup do alerta indicado por `?alert=<id>` na URL
+ * (F9.1) — usado pelos links "Ver no mapa" de /alertas e /alertas/:id.
+ * Precisa estar dentro de <MapContainer> pra ter acesso ao `useMap()`.
+ */
+function MapAlertFocus({
+  alerts,
+  focusId,
+  markerRefs,
+}: {
+  alerts: DemoAlert[] | null;
+  focusId: string | null;
+  markerRefs: MutableRefObject<Record<string, L.Marker>>;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!focusId || !alerts) return;
+    const alert = alerts.find((a) => a.id === focusId);
+    if (!alert) return;
+
+    map.flyTo([alert.latitude, alert.longitude], 13, { duration: 0.8 });
+    const timer = setTimeout(() => {
+      markerRefs.current[alert.id]?.openPopup();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [focusId, alerts, map, markerRefs]);
+
+  return null;
+}
+
 export function RiskMap() {
+  const [searchParams] = useSearchParams();
+  const focusAlertId = searchParams.get("alert");
+
   const [demoMap, setDemoMap] = useState<DemoMapResponse | null>(null);
-  const [points, setPoints] = useState<DemoPoint[] | null>(null);
+  const [alerts, setAlerts] = useState<DemoAlert[] | null>(null);
   const [shelters, setShelters] = useState<DemoShelter[] | null>(null);
   const [boundary, setBoundary] = useState<GeoJsonObject | null>(null);
   const [handZones, setHandZones] = useState<GeoJsonObject | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const alertMarkerRefs = useRef<Record<string, L.Marker>>({});
 
   useEffect(() => {
     fetchDemoMap()
       .then(setDemoMap)
       .catch(() => setGeoError("Não foi possível falar com a API. O backend está rodando?"));
 
-    fetchDemoPoints()
-      .then((data) => setPoints(data.points))
-      .catch(() => {
-        // demo-points não depende de banco — se isso falhar, é a API
-        // inteira fora do ar, já coberto pelo erro de fetchDemoMap acima.
-      });
+    // Alertas simulados (F9.1) — mesma fonte de /alertas, com lat/lon
+    // próprios (services/api/app/routers/alerts.py::_build_alert). Se
+    // falhar, é a API inteira fora do ar, já coberto pelo erro acima.
+    fetchDemoAlerts()
+      .then((data) => setAlerts(data.alerts))
+      .catch(() => {});
 
     // Camada opcional de abrigos (F7) — busca independente das camadas
     // geoespaciais acima; se falhar, o mapa continua funcionando sem os
-    // marcadores de abrigo, não derruba boundary/hand-zones/pontos.
+    // marcadores de abrigo, não derruba boundary/hand-zones/alertas.
     fetchDemoShelters()
       .then((data) => setShelters(data.shelters))
       .catch(() => {});
@@ -144,7 +189,12 @@ export function RiskMap() {
 
       <div className="mb-4">
         <DemoNotice>
-          Marcadores de cenário são simulados (mesmos 3 de <code className="text-slate-400">/api/scenarios/demo</code>).
+          Marcadores de alerta são eventos simulados de demonstração (mesmos 3 de{" "}
+          <Link to="/alertas" className="text-accent underline underline-offset-2">
+            /alertas
+          </Link>
+          ) — não são alertas oficiais emitidos pela Defesa Civil. O mapa apoia a
+          decisão, não a substitui.
           {usingFallback && (
             <>
               {" "}Camadas HAND servidas por arquivo estático — PostGIS
@@ -214,17 +264,23 @@ export function RiskMap() {
             />
           )}
 
-          {points?.map((point) => (
-            <Marker key={point.id} position={[point.lat, point.lon]} icon={pointIcon(RISK_THEME[point.risk_level])}>
+          {alerts?.map((alert) => (
+            <Marker
+              key={alert.id}
+              position={[alert.latitude, alert.longitude]}
+              icon={alertIcon(RISK_THEME[alert.risk_level], alert.risk_level)}
+              ref={(instance) => {
+                if (instance) alertMarkerRefs.current[alert.id] = instance;
+                else delete alertMarkerRefs.current[alert.id];
+              }}
+            >
               <Popup>
-                <strong>{point.name}</strong>
-                <br />
-                Risco: {RISK_THEME[point.risk_level].label} ({Math.round(point.risk_score * 100)}%)
-                <br />
-                <span style={{ fontSize: "0.85em" }}>{point.explanation}</span>
+                <AlertMapPopup alert={alert} />
               </Popup>
             </Marker>
           ))}
+
+          <MapAlertFocus alerts={alerts} focusId={focusAlertId} markerRefs={alertMarkerRefs} />
 
           {shelters?.map((shelter) => (
             <Marker key={shelter.id} position={[shelter.latitude, shelter.longitude]} icon={shelterIcon()}>

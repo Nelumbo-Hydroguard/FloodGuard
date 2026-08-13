@@ -120,7 +120,7 @@ export function AlertDetail() {
         <Link to="/alertas" className="text-sm text-accent hover:underline underline-offset-2">
           ← Voltar para Alertas
         </Link>
-        <Link to="/mapa" className="text-sm text-accent hover:underline underline-offset-2">
+        <Link to={`/mapa?alert=${alert.id}`} className="text-sm text-accent hover:underline underline-offset-2">
           Ver no Mapa
         </Link>
         <Link to="/telemetria" className="text-sm text-accent hover:underline underline-offset-2">

@@ -196,6 +196,8 @@ export interface DemoAlert {
   id: string;
   title: string;
   region: string | null;
+  latitude: number;
+  longitude: number;
   risk_level: RiskLevel;
   risk_score: number;
   confidence: number;
