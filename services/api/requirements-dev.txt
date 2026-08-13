@@ -1,0 +1,4 @@
+# Dependências só de teste — não entram na imagem de produção da API.
+-r requirements.txt
+pytest>=8.3.0
+httpx>=0.27.0

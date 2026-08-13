@@ -3,19 +3,22 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F2 — dados HAND reais de Blumenau importados
-> para PostGIS). Endpoints de geo já leem dado real; o resto (telemetry,
-> risk, alerts, shelters) segue placeholder. Autoria coletiva do motor de
-> risco (`techguard-sentinela`) foi acordada entre a equipe — código ainda
-> não movido, ver [docs/autoria-licenca.md](docs/autoria-licenca.md).
-> Este README será atualizado a cada fase.
+> Status: em consolidação (Fase F6 — identidade visual, mapa funcional com
+> Leaflet e fallback geoespacial estático, backend de demo resiliente a
+> falha de PostGIS). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3) e o
+> frontend que os consome (F4/F6) já têm regra de negócio real; `alerts` e
+> `shelters` seguem placeholder. Autoria coletiva registrada — ver
+> [docs/autoria-licenca.md](docs/autoria-licenca.md). Este README será
+> atualizado a cada fase.
 
 ## O que é?
 
 FloodGuard integra:
 
-- **Motor de risco** — cruza cota topográfica relativa à drenagem (HAND), índices
-  espectrais (NDVI/NDBI), chuva efetiva e saturação hidrológica do solo.
+- **Motor de risco** — cruza contexto espacial HAND com chuva acumulada,
+  nível d'água e tendência temporal numa fórmula explicável, com
+  justificativa textual e fallback quando HAND não está disponível
+  ([docs/motor-de-risco.md](docs/motor-de-risco.md)).
 - **Pipeline geoespacial HAND** — DEM + bacias hidrográficas + limites municipais,
   processados com WhiteboxTools/Rasterio/GeoPandas.
 - **Banco espacial** — PostgreSQL + PostGIS.
@@ -106,10 +109,9 @@ FloodGuard/
 ```
 
 O esqueleto acima (`services/`, `apps/`, `db/`, `infra/`) existe desde a F1.
-`data/hand/` entrou na F2, com os artefatos HAND reais de Blumenau. Código de
-negócio real ainda pendente: motor de risco (autorizado, código não movido —
-ver [docs/autoria-licenca.md](docs/autoria-licenca.md)), telemetria real,
-alertas e abrigos (F3).
+`data/hand/` entrou na F2. O motor de risco (`services/api/app/engine/`)
+entrou na F3. Ainda pendente: alertas e abrigos com regra de negócio real
+(hoje só CRUD placeholder).
 
 ## F2 — dados HAND reais
 
@@ -125,9 +127,8 @@ O coração geoespacial do projeto está conectado:
   `/api/geo/hand-zones`, `/api/geo/hand-zones/summary` e
   `/api/geo/point-risk-context` já leem dado real do PostGIS — não são mais
   placeholder.
-- `point-risk-context` dá só o contexto espacial HAND de um ponto. **Não**
-  é o motor de risco completo — esse continua fora do escopo desta fase
-  (autorizado, mas ainda não movido/implementado — F3).
+- `point-risk-context` dá só o contexto espacial HAND de um ponto. O motor
+  de risco completo que consome esse contexto foi implementado na F3.
 
 Metodologia, proveniência dos dados e limitações:
 [docs/metodologia-hand.md](docs/metodologia-hand.md). Passo a passo de
@@ -168,6 +169,169 @@ scripts/dev/test_geo_endpoints.sh
 boot automático do container (útil se você preferir rodar contra um Postgres
 já existente em vez do `postgis` do compose).
 
+## F3 — motor de risco
+
+Motor de risco explicável rodando em `services/api/app/engine/`, **sem
+dependência obrigatória de banco** — por isso avançou mesmo com a F2.1
+bloqueada por falta de acesso a Docker/PostGIS local:
+
+- `risk_engine.py` combina contexto HAND (0.45), chuva acumulada (0.30),
+  nível d'água (0.20) e tendência temporal (0.05) numa fórmula única,
+  auditável. Contexto HAND vem do payload (`hand_class_id`/
+  `hand_risk_weight`) ou de um lookup mockado por região
+  (`spatial_context.py`) — não exige consulta ao PostGIS.
+- Fallback automático quando HAND não está disponível: `confidence` cai de
+  0.95 para 0.55, peso redistribuído entre os fatores restantes,
+  justificativa deixa isso explícito.
+- `telemetry_normalizer.py` aceita payload bruto simulado com nomes de
+  campo variados (`rainfall`/`rainfall_mm`, `lat`/`latitude` etc.).
+- `mesh_payload.py` empacota o resultado como payload UniMesh/LoRa
+  simulado — `implemented: false` sempre, inclusive em risco crítico
+  (testado).
+- Endpoints novos: `POST /api/risk/evaluate`, `POST
+  /api/risk/evaluate-batch`, `GET /api/scenarios/demo` (3 cenários fixos
+  rodados pelo motor real), `POST /api/telemetry/normalize`, `POST
+  /api/telemetry/mesh-payload`.
+- **27 testes unitários** (`services/api/tests/`), todos passando sem
+  Postgres: score sempre entre 0 e 1, crítico quando todos os fatores estão
+  altos, seguro quando todos estão baixos, fallback funciona, explicação
+  muda com os fatores, payload mesh sempre `implemented: false`, todos os
+  endpoints novos respondem.
+
+Fórmula completa, fatores, exemplos reais e créditos:
+[docs/motor-de-risco.md](docs/motor-de-risco.md).
+
+```bash
+cd services/api
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -v
+```
+
+## F4 — dashboard web
+
+Frontend React passou a consumir a API real do motor de risco (F3) — nada
+hardcoded quando a API está no ar; fallback só quando ela está fora do ar
+ou o PostGIS ainda não foi populado.
+
+Telas:
+
+| Rota | Consome | O que mostra |
+|---|---|---|
+| `/painel` | `GET /api/risk/status`, `GET /api/scenarios/demo` | 3 cards de risco (seguro/alerta/crítico) com score, confiança, fatores, justificativa e ação recomendada — vindos do motor real, não hardcoded |
+| `/mapa` | `GET /api/geo/demo-map`, `GET /api/geo/demo-points`, camadas de `/geo/*.geojson` (ou `geo/municipality` + `geo/hand-zones` quando há PostGIS) | Mapa Leaflet com zonas HAND, limite municipal e marcadores de cenário; fallback estático automático quando o banco está fora do ar |
+| `/alertas` | `GET /api/scenarios/demo` | Lista de eventos simulados (nível, região, explicação, ação recomendada, horário) derivados dos 3 cenários fixos |
+| `/telemetria` | `POST /api/risk/evaluate`, `POST /api/telemetry/mesh-payload` | Formulário para testar o motor de risco com valores livres; botão separado gera o payload UniMesh/LoRa simulado (`implemented: false`) |
+| `/abrigos` | — (estático, F6.2.1) | 3 abrigos **simulados** com capacidade/ocupação/status — dados fixos no frontend, sem banco e sem API; CRUD real é F7 |
+| `/sobre` | — (estático) | GovTech B2G, Defesa Civil, Blumenau/SC, HAND = suscetibilidade, motor = PoC explicável, U-RNN = roadmap |
+| `*` (qualquer rota desconhecida) | — (estático, F6.2.1) | Página 404 dentro do Layout, com nav e atalhos — nunca mais tela vazia |
+
+Endpoints reais consumidos pelo frontend (todos com prefixo `/api/`, exceto
+`/health`): `geo/demo-map`, `geo/demo-points`, `geo/municipality/blumenau`,
+`geo/hand-zones`, `risk/status`, `risk/evaluate`, `scenarios/demo`,
+`telemetry/mesh-payload`. `risk/evaluate-batch`, `telemetry/normalize`,
+`geo/hand-zones/summary` e `geo/basins/blumenau` existem na API mas não têm
+consumidor dedicado no frontend ainda.
+
+**Comportamento sem PostGIS (F6.2.1).** `GET /api/geo/status` reporta o
+estado real do banco (`connected` só com PostGIS respondendo *e*
+`hand_zones` populada; caso contrário `degraded`/`unavailable`) e nunca
+devolve 500. Os 5 endpoints que leem o banco
+(`municipality/blumenau`, `basins/blumenau`, `hand-zones`,
+`hand-zones/summary`, `point-risk-context`) respondem **503** com mensagem
+acionável em vez de 500 cru. `demo-map` e `demo-points` continuam
+funcionando sempre.
+
+Componentes novos: `RiskCard`, `StatusBadge`, `FactorBar`
+(`apps/web/src/components/`) — reutilizados em `/painel`, `/alertas` e
+`/telemetria`.
+
+**Limitações conhecidas:**
+
+- ~~Região dos alertas simulados mapeada à mão no frontend~~ — corrigido na
+  F6: `RiskEvaluationResponse` agora carrega `region` (eco do que veio no
+  request), `Alertas.tsx` usa `result.region` direto, sem mapa duplicado.
+- ~~`/mapa` sem cartografia~~ — corrigido na F6: Leaflet real, com fallback
+  geoespacial estático (ver seção F6 abaixo).
+- Nenhuma tela usa `evaluate-batch` — cada avaliação em `/telemetria` é uma
+  chamada individual a `/api/risk/evaluate`.
+
+## F6 — identidade visual, mapa funcional e backend de demo
+
+Objetivo: elevar a PoC pra qualidade de demonstração — visual de centro de
+operações GovTech, mapa que funciona mesmo sem PostGIS, backend que nunca
+quebra o frontend por falha de banco.
+
+### Identidade visual
+
+Paleta centralizada em `apps/web/tailwind.config.ts` (tokens `navy`,
+`accent`, `risk`) e `apps/web/src/lib/riskTheme.ts` (cor/label por
+`RiskLevel`) — nenhum componente redefine cor de risco por conta própria.
+Componentes novos: `PageHeader`, `SectionCard`, `MetricCard`, `DemoNotice`,
+`EmptyState`, `ErrorState`, `RiskLegend`, `MapLegend`. `Layout.tsx` ganhou
+estado ativo de navegação e badge fixo "Modo demo — dados simulados".
+
+### Mapa funcional sem PostGIS
+
+`/mapa` agora renderiza cartografia real com **Leaflet** (`leaflet` +
+`react-leaflet`, ~50 KB gzip): limite de Blumenau, 4 zonas de suscetibilidade
+HAND coloridas (mesma escala verde→vermelho do resto da plataforma:
+`muito_baixa`→seguro, `baixa`→atenção, `media`→alerta, `alta`→crítico),
+marcadores dos 3 cenários demo com popup, e legenda fixa no canto.
+
+**Fonte da geometria, em ordem de tentativa:**
+1. `GET /api/geo/demo-map` diz se o PostGIS está respondendo (`source: "postgis"` ou `"static_fallback"`).
+2. Se `postgis`: busca `/api/geo/municipality/blumenau` e `/api/geo/hand-zones` (dado real).
+3. Se `static_fallback` (ou a busca acima falhar): carrega
+   `apps/web/public/geo/blumenau_boundary.geojson` e
+   `blumenau_hand_zones_simplified.geojson` — arquivos estáticos servidos
+   pelo Vite, gerados por
+   `services/geo/scripts/generate_web_geojson.py` a partir de `data/hand/`.
+
+O mapa **nunca fica vazio**: os marcadores de cenário vêm de
+`GET /api/geo/demo-points`, que roda o motor de risco real e não depende de
+banco — sempre disponíveis, com ou sem PostGIS.
+
+Para regenerar os arquivos estáticos (se os dados HAND mudarem):
+```bash
+cd services/geo
+.venv/bin/python scripts/generate_web_geojson.py
+```
+Tamanho total gerado: ~7,3 MB (limite pedido: <10 MB; `blumenau_hand_zones_simplified.geojson`,
+o maior, tem ~6,4 MB — simplificado de ~48 MB brutos com
+`simplify(0.0005, preserve_topology=False)`; `preserve_topology=True` foi
+testado e trava, > 3 min sem terminar, na geometria real).
+
+### Backend de demo
+
+Dois endpoints novos em `services/api/app/routers/geo.py`, nenhum exige
+banco para responder 200:
+
+| Endpoint | Depende de PostGIS? | O que faz |
+|---|---|---|
+| `GET /api/geo/demo-map` | Tenta, cai em fallback | Status + estatísticas das 4 classes HAND — `source: "postgis"` (dado real) ou `"static_fallback"` (números de referência da F2, mesmos do `hand_classes_stats.json`) |
+| `GET /api/geo/demo-points` | Não | 3 pontos dos cenários fixos, rodados pelo motor de risco real (mesma fonte de `/api/scenarios/demo`) |
+
+`demo-map` nunca retorna 500 nem expõe credencial de banco na mensagem de
+erro — só loga o tipo da exceção no servidor. Testado em
+`services/api/tests/test_geo_demo.py`.
+
+### Consistência de dados
+
+`RiskEvaluationResponse` passou a carregar `region` (eco do que veio no
+request) — `Alertas.tsx` usa isso direto, sem mais duplicar a região dos
+cenários fixos no frontend. `/painel`, `/alertas` e `/mapa` usam os mesmos
+4 níveis de risco e a mesma paleta (`riskTheme.ts`).
+
+### Telas atualizadas
+
+| Rota | O que mudou na F6 |
+|---|---|
+| `/sobre` | Blocos "Implementado / Simulado / Roadmap" lado a lado |
+| `/painel` | Indicadores (cenários avaliados, maior risco, confiança média, comunicação simulada) + "próxima ação recomendada" |
+| `/telemetria` | Atalhos de cenário (seguro/alerta/crítico), payload mesh em bloco separado com selo `implemented: false` |
+| `/alertas` | Filtro por nível, região vinda da API (não mais duplicada no frontend) |
+| `/mapa` | Cartografia Leaflet real + fallback estático, nunca vazio |
+
 ## Como rodar localmente
 
 Pré-requisitos: Docker e Docker Compose.
@@ -184,9 +348,9 @@ Isso sobe PostGIS (com `db/migrations/*.sql` aplicadas no primeiro boot via
 `docker-entrypoint-initdb.d`), a API FastAPI com reload e o frontend Vite.
 As tabelas HAND ficam vazias até rodar a importação — ver
 [db/seeds/import_hand_blumenau.md](db/seeds/import_hand_blumenau.md) ou,
-mais direto, `scripts/dev/run_export.sh`. Fora `geo`, os demais endpoints e
-telas (telemetry, risk, alerts, shelters) ainda são placeholders, sem regra
-de negócio real.
+mais direto, `scripts/dev/run_export.sh`. `risk`, `telemetry` e `scenarios`
+funcionam sem banco (F3, veja seção abaixo). `alerts` e `shelters` ainda são
+placeholders, sem regra de negócio real.
 
 Para rodar sem Docker:
 
@@ -199,5 +363,9 @@ uvicorn app.main:app --reload
 # Web
 cd apps/web
 npm install
-npm run dev
+npm run dev       # http://localhost:5173, espera a API em http://localhost:8000
+npm run build      # verificação — sem lint configurado, build é o gate
 ```
+
+Frontend lê a URL da API de `VITE_API_URL` (padrão
+`http://localhost:8000` se não definida — ver `apps/web/src/lib/api.ts`).
