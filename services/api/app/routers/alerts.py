@@ -58,6 +58,8 @@ def _build_alert(alert_id: str) -> DemoAlert:
         id=alert_id,
         title=_TITLE_BY_LEVEL[result.risk_level],
         region=result.region,
+        latitude=request.latitude,
+        longitude=request.longitude,
         risk_level=result.risk_level,
         risk_score=result.risk_score,
         confidence=result.confidence,

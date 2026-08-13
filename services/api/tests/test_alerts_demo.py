@@ -67,3 +67,22 @@ def test_demo_alert_suggests_next_step_when_risky():
     safe = client.get("/api/alerts/demo/seguro").json()
     assert critical["suggested_next_step"] == "/telemetria"
     assert safe["suggested_next_step"] is None
+
+
+def test_demo_alerts_have_valid_coordinates_for_map_rendering():
+    """F9.1: alertas precisam de lat/lon próprios pra renderizar no mapa sem
+    depender de um segundo fetch (/api/geo/demo-points) pra correlacionar
+    por id."""
+    alerts = client.get("/api/alerts/demo").json()["alerts"]
+    for alert in alerts:
+        assert -90 <= alert["latitude"] <= 90
+        assert -180 <= alert["longitude"] <= 180
+
+
+def test_demo_alert_coordinates_match_demo_scenario_source():
+    """As coordenadas do alerta vêm do mesmo DEMO_SCENARIOS usado por
+    /api/geo/demo-points — nunca geografia inventada à parte."""
+    for alert_id, request in DEMO_SCENARIOS.items():
+        alert = client.get(f"/api/alerts/demo/{alert_id}").json()
+        assert alert["latitude"] == request.latitude
+        assert alert["longitude"] == request.longitude

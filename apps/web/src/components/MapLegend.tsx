@@ -45,7 +45,14 @@ export function MapLegend() {
       </p>
       <span className="flex items-center gap-1.5 mb-1">
         <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: "#94a3b8" }} />
-        Cenários simulados (seguro/alerta/crítico)
+        Alertas simulados (mesmos de /alertas)
+      </span>
+      <span className="flex items-center gap-1.5 mb-1">
+        <span className="relative h-2.5 w-2.5 shrink-0">
+          <span className="absolute inset-[-3px] rounded-full bg-risk-critical/40 animate-ping" />
+          <span className="relative block h-2.5 w-2.5 rounded-full bg-risk-critical" />
+        </span>
+        Alerta crítico (destaque pulsante)
       </span>
       <span className="flex items-center gap-1.5">
         <span className="h-2 w-2 shrink-0" style={{ background: "#22d3ee", transform: "rotate(45deg)" }} />

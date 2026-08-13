@@ -66,11 +66,14 @@ motor funcionando com dado digitado na hora).
 - **Objetivo da tela:** mostrar o diferencial geoespacial — suscetibilidade
   HAND real de Blumenau, não um número solto.
 - **O que mostrar:** as 4 zonas coloridas, o limite municipal (linha
-  ciano), os marcadores de cenário e de abrigo, clique num polígono e num
-  marcador para abrir o popup.
+  ciano), os marcadores de alerta simulado e de abrigo, clique num
+  polígono e num marcador de alerta para abrir o popup (mostra score,
+  confiança, explicação, ação recomendada e link para o detalhe). O
+  marcador do alerta crítico pulsa — destaque de gravidade.
 - **Frase curta:** "Essas cores vêm de dado geoespacial real, processado
   uma vez a partir de elevação e bacias hidrográficas — não são
-  aproximação visual."
+  aproximação visual. E o alerta que você vê aqui é o mesmo de `/alertas`,
+  na localização real do cenário."
 - **Cuidado:** se perguntarem por que a cor passa da linha do município,
   explicar que é a bacia contribuinte (intencional, não erro) — não fingir
   que não percebeu.
@@ -91,18 +94,23 @@ motor funcionando com dado digitado na hora).
 
 - **Objetivo da tela:** mostrar como o mesmo motor alimenta uma lista
   operacional.
-- **O que mostrar:** os filtros por nível, o badge "simulado" em cada card.
+- **O que mostrar:** os filtros por nível, o badge "simulado" em cada card,
+  e o link "Ver no mapa →" em cada card (leva direto pro marcador certo em
+  `/mapa?alert=<id>`).
 - **Frase curta:** "Cada evento simulado aqui vem do mesmo motor que vimos
-  em Telemetria — mesma fonte de verdade, não dado inventado à parte."
+  em Telemetria — mesma fonte de verdade, não dado inventado à parte. E dá
+  pra ir direto pro mapa a partir daqui."
 - **Cuidado:** nunca dizer "alerta emitido" sem qualificar "simulado".
 
 ### `/alertas/critico`
 
 - **Objetivo da tela:** detalhe completo de um evento.
 - **O que mostrar:** score, confiança, justificativa, ação recomendada,
-  aviso de origem simulada, links para mapa e telemetria.
+  aviso de origem simulada, links para mapa e telemetria. O link "Ver no
+  Mapa" leva para `/mapa?alert=critico`, que dá `flyTo` até o marcador e
+  abre o popup automaticamente.
 - **Frase curta:** "Esse é o nível de detalhe que o operador veria antes de
-  decidir uma ação."
+  decidir uma ação — e o mesmo alerta, no mesmo lugar, no mapa."
 
 ### `/abrigos`
 
