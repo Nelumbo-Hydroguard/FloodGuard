@@ -3,11 +3,11 @@
 Plataforma GovTech B2G de apoio à tomada de decisão da Defesa Civil em eventos de
 alagamento e inundação urbana, com piloto em Blumenau/SC.
 
-> Status: em consolidação (Fase F6 — identidade visual, mapa funcional com
-> Leaflet e fallback geoespacial estático, backend de demo resiliente a
-> falha de PostGIS). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3) e o
-> frontend que os consome (F4/F6) já têm regra de negócio real; `alerts` e
-> `shelters` seguem placeholder. Autoria coletiva registrada — ver
+> Status: em consolidação (Fase F7 — alertas e abrigos simulados via API,
+> sem persistência). `geo` (F2), `risk`/`telemetry`/`scenarios` (F3),
+> `alerts`/`shelters` (F7) e o frontend que os consome (F4/F6/F7) já têm
+> regra de negócio real ou simulação consistente ponta a ponta — nenhum
+> ainda persiste dado em banco. Autoria coletiva registrada — ver
 > [docs/autoria-licenca.md](docs/autoria-licenca.md). Este README será
 > atualizado a cada fase.
 
@@ -110,8 +110,9 @@ FloodGuard/
 
 O esqueleto acima (`services/`, `apps/`, `db/`, `infra/`) existe desde a F1.
 `data/hand/` entrou na F2. O motor de risco (`services/api/app/engine/`)
-entrou na F3. Ainda pendente: alertas e abrigos com regra de negócio real
-(hoje só CRUD placeholder).
+entrou na F3. Alertas e abrigos simulados via API entraram na F7 (ver seção
+abaixo). Ainda pendente: persistência real de qualquer um desses dados —
+tudo hoje é recalculado em memória ou fixo em lista, sem gravar em banco.
 
 ## F2 — dados HAND reais
 
@@ -332,6 +333,56 @@ cenários fixos no frontend. `/painel`, `/alertas` e `/mapa` usam os mesmos
 | `/alertas` | Filtro por nível, região vinda da API (não mais duplicada no frontend) |
 | `/mapa` | Cartografia Leaflet real + fallback estático, nunca vazio |
 
+## F7 — alertas e abrigos simulados
+
+Objetivo: dar a `/alertas` e `/abrigos` uma fonte de dados de verdade (API,
+não mais mock local no frontend), mantendo tudo explicitamente simulado —
+sem persistência, sem emissão real da Defesa Civil, sem vínculo confirmado
+com instituição real.
+
+### Backend
+
+Dois routers que eram placeholder da F1 (`app/routers/{alerts,shelters}.py`)
+ganharam endpoints de demo, nenhum exige banco:
+
+| Endpoint | Fonte | O que faz |
+|---|---|---|
+| `GET /api/alerts/status` | — | `status: "demo"`, `persistence: false`, mensagem explicando a simulação |
+| `GET /api/alerts/demo` | `app.routers.scenarios.DEMO_SCENARIOS` | Lista de alertas — cada um reavaliado pelo motor de risco (F3) a cada chamada, não gravado em banco |
+| `GET /api/alerts/demo/{id}` | idem | Detalhe de 1 alerta (`id` = `seguro`/`alerta`/`critico`); `id` desconhecido → 404 com mensagem acionável |
+| `GET /api/shelters/status` | — | `status: "demo"`, `persistence: false` |
+| `GET /api/shelters/demo` | lista fixa em `shelters.py` | 4 abrigos simulados (baixa/média/quase lotado/indisponível), nomes genéricos ("Abrigo Municipal Simulado") |
+
+`DemoAlert.status` usa sempre o prefixo `simulated_` (`simulated_monitoring`
+/`_attention`/`_active`/`_critical`) — nunca "active" sozinho, pra nunca
+parecer um alerta real emitido pela Defesa Civil. Alertas e abrigos
+compartilham as mesmas 4 regiões simuladas (Centro, Velha, Itoupava Norte,
+Garcia) já usadas pelos cenários de risco e pelo lookup HAND mockado
+(`app/engine/spatial_context.py`) — mesma geografia de demonstração em todo
+o produto, coordenadas reaproveitadas, não inventadas soltas.
+
+### Frontend
+
+| Rota | O que mudou na F7 |
+|---|---|
+| `/alertas` | Passou a consumir `GET /api/alerts/demo` em vez de `/api/scenarios/demo` direto — título e status vêm prontos da API, sem lógica duplicada no frontend. Novo filtro "somente ativos/críticos", link para o detalhe de cada evento |
+| `/alertas/:id` | Deixou de ser placeholder — consome `GET /api/alerts/demo/{id}`, mostra score/confiança/explicação/ação/status, erro amigável com link de volta se o `id` não existir |
+| `/abrigos` | Deixou de usar dados fixos no frontend — consome `GET /api/shelters/demo`, indicadores agregados (capacidade, ocupação, vagas), 4 perfis de ocupação com cor própria |
+| `/mapa` | Camada opcional de marcadores de abrigo (losango ciano, ícone distinto dos pontos de cenário), seção com link para `/abrigos` |
+
+### Limitações que continuam de pé
+
+- Nada é persistido — nem alerta nem abrigo sobrevive a um restart da API;
+  as tabelas `alerts`/`shelters`/`shelter_requests` (`002_core_tables.sql`)
+  continuam vazias.
+- Não há emissão manual de alerta por um operador (sem autenticação, sem
+  formulário de escrita) — os únicos alertas possíveis são os 3 cenários
+  fixos do motor de risco.
+- Não há vínculo confirmado entre os abrigos simulados e uma instituição
+  real de Blumenau — os nomes são genéricos de propósito.
+- Cadastro de abrigo pelo cidadão e triagem pelo operador seguem roadmap
+  (`docs/roadmap.md`).
+
 ## Como rodar localmente
 
 Pré-requisitos: Docker e Docker Compose.
@@ -348,9 +399,9 @@ Isso sobe PostGIS (com `db/migrations/*.sql` aplicadas no primeiro boot via
 `docker-entrypoint-initdb.d`), a API FastAPI com reload e o frontend Vite.
 As tabelas HAND ficam vazias até rodar a importação — ver
 [db/seeds/import_hand_blumenau.md](db/seeds/import_hand_blumenau.md) ou,
-mais direto, `scripts/dev/run_export.sh`. `risk`, `telemetry` e `scenarios`
-funcionam sem banco (F3, veja seção abaixo). `alerts` e `shelters` ainda são
-placeholders, sem regra de negócio real.
+mais direto, `scripts/dev/run_export.sh`. `risk`, `telemetry`, `scenarios`,
+`alerts` e `shelters` funcionam sem banco (F3/F7, veja seções abaixo) — todos
+simulados, sem persistência.
 
 Para rodar sem Docker:
 

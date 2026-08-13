@@ -44,12 +44,16 @@ documentação pública.
 9. **Finalidade.** O sistema possui finalidade acadêmica, experimental e
    demonstrativa — não é um produto operacional em produção.
 
-10. **Abrigos são demonstrativos.** A tela `/abrigos` (F6.2.1) exibe 3
-    abrigos com capacidade, ocupação e status — todos **simulados e fixos no
-    frontend** (`apps/web/src/pages/Shelters.tsx`). Não vêm do banco, não
-    passam pela API e não representam abrigos ativos da Defesa Civil de
-    Blumenau. O router `shelters.py` continua placeholder e a tabela
-    `shelters` continua vazia; CRUD real é item da F7.
+10. **Abrigos e alertas são demonstrativos, sem persistência.** As telas
+    `/abrigos` e `/alertas` (F7, `GET /api/shelters/demo` e
+    `GET /api/alerts/demo`) mostram dados **simulados** — abrigos com nomes
+    genéricos ("Abrigo Municipal Simulado"), sem vínculo confirmado com
+    instituição real, e alertas recalculados a cada chamada sobre os 3
+    cenários fixos do motor de risco. Nada é gravado em banco: as tabelas
+    `shelters` e `alerts` (`db/migrations/002_core_tables.sql`) continuam
+    vazias, e nenhum alerta representa uma emissão real da Defesa Civil de
+    Blumenau. Persistência real, cadastro pelo cidadão e triagem por
+    operador seguem como roadmap.
 
 11. **Cobertura HAND maior que o município.** As zonas HAND cobrem a área
     hidrologicamente contribuinte (sub-bacias que drenam para a região), não
