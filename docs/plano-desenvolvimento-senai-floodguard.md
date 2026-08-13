@@ -19,7 +19,7 @@ justificativa textual e de uma ação recomendada, não apenas um número. O
 sistema é **software-only e hardware-agnóstico**: não há sensor físico,
 rádio LoRa, Meshtastic ou MQTT reais em operação em nenhum momento; toda
 telemetria e toda comunicação de campo são simuladas e identificadas como
-tal em cada resposta da API e em cada tela. Backend em FastAPI (62 testes
+tal em cada resposta da API e em cada tela. Backend em FastAPI (65 testes
 automatizados passando, sem depender de banco), frontend em React 19 + Vite
 + Tailwind + Leaflet, banco espacial PostgreSQL/PostGIS com schema pronto
 (ainda não validado ponta a ponta em ambiente local por indisponibilidade
@@ -108,7 +108,7 @@ consulta manual a fontes separadas.
 - Dashboard web completo: painel, mapa (com fallback geoespacial estático),
   telemetria, alertas, detalhe de alerta, abrigos, página sobre, 404
   amigável.
-- 62 testes automatizados de backend.
+- 65 testes automatizados de backend.
 
 ### 2.5 Fora do escopo da PoC
 
@@ -180,7 +180,8 @@ Leaflet/`react-leaflet` para o mapa. Paleta e componentes centralizados
 score = 0.45·hand_risk_weight + 0.30·rainfall_factor + 0.20·water_level_factor + 0.05·trend_factor
 ```
 
-Classificação em 4 níveis (`seguro` 0,00–0,25; `atencao` 0,26–0,50;
+Classificação em 4 níveis, em intervalos semiabertos — o valor de fronteira
+cai na faixa seguinte (`seguro` 0,00–0,25; `atencao` 0,25–0,50;
 `alerta` 0,51–0,75; `critico` 0,76–1,00). Sem contexto HAND disponível, o
 motor não inventa peso: redistribui os pesos restantes, reduz `confidence`
 de 0,95 para 0,55, e sinaliza isso explicitamente na justificativa textual.
@@ -279,7 +280,7 @@ fora do ar, sem vazar credencial na mensagem.
 | RNF07 | Transparência sobre simulação (`source`, `simulated`, avisos em tela) | Atendido |
 | RNF08 | Segurança e LGPD como preocupação futura | Não implementado — documentado como pendência |
 | RNF09 | Versionamento Git (GitHub, organização Nelumbo-Hydroguard) | Atendido |
-| RNF10 | Testabilidade (62 testes automatizados de backend) | Atendido no backend; sem suíte de testes de frontend ainda |
+| RNF10 | Testabilidade (65 testes automatizados de backend) | Atendido no backend; sem suíte de testes de frontend ainda |
 | RNF11 | Baixo acoplamento com PostGIS local (endpoints funcionam sem banco) | Atendido |
 | RNF12 | Documentação (README + `docs/`) | Atendido |
 
@@ -354,7 +355,7 @@ camadas geoespaciais (GeoJSON, via PostGIS ou fallback estático).
 
 ### 6.1 Testes automatizados
 
-**62 de 62 testes de backend passando** (`services/api/tests/`, `pytest`),
+**65 de 65 testes de backend passando** (`services/api/tests/`, `pytest`),
 cobrindo: motor de risco (score sempre entre 0 e 1, classificação correta
 em cada nível, fallback sem HAND, explicação varia com os fatores),
 normalizador de telemetria (aliases, clamp, campos enriquecidos),
@@ -476,7 +477,7 @@ real (HAND de Blumenau/SC), um motor de decisão explicável e uma interface
 operacional voltada à Defesa Civil municipal — mantendo, em cada camada,
 transparência explícita sobre o que é real e o que é simulado. A PoC
 cumpre o objetivo acadêmico de mostrar viabilidade técnica da arquitetura
-proposta, com 62 testes automatizados de backend passando e frontend
+proposta, com 65 testes automatizados de backend passando e frontend
 buildando sem erro, ao mesmo tempo em que documenta com honestidade suas
 limitações — motor não calibrado, ausência de persistência real,
 dependência ainda não validada do PostGIS — como itens de roadmap

@@ -15,15 +15,18 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-navy-950 text-slate-100">
       <header className="sticky top-0 z-50 border-b border-navy-700 bg-navy-950/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 px-6 py-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link to="/" className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-accent shrink-0" />
               <span className="font-semibold text-white tracking-tight">FloodGuard</span>
             </Link>
-            <nav className="flex items-center gap-1">
+            <nav className="flex flex-wrap items-center gap-1">
               {NAV_ITEMS.map((item) => {
-                const active = location.pathname === item.to;
+                // Prefixo, não igualdade: em /alertas/critico o item
+                // "Alertas" continua destacado (F9). Com igualdade exata a
+                // navegação perdia o "você está aqui" ao abrir um detalhe.
+                const active = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
                 return (
                   <Link
                     key={item.to}

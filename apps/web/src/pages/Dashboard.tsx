@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { fetchRiskStatus, fetchScenariosDemo, type RiskEvaluationResponse, type ScenariosDemoResponse } from "../lib/api";
+import {
+  fetchRiskStatus,
+  fetchScenariosDemo,
+  type RiskEvaluationResponse,
+  type RiskLevel,
+  type ScenariosDemoResponse,
+} from "../lib/api";
 import { RISK_THEME, riskWeight } from "../lib/riskTheme";
 import { RiskCard } from "../components/RiskCard";
 import { PageHeader } from "../components/PageHeader";
@@ -10,11 +16,21 @@ import { RiskLegend } from "../components/RiskLegend";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 
-const SCENARIO_TITLES: Record<keyof ScenariosDemoResponse["scenarios"], string> = {
-  seguro: "Cenário seguro",
-  alerta: "Cenário alerta",
-  critico: "Cenário crítico",
-};
+/**
+ * Título derivado do nível de risco que o motor realmente devolveu — não da
+ * chave do cenário (F9).
+ *
+ * A chave (`seguro`/`alerta`/`critico`) descreve a *intenção* do cenário
+ * fixo; o `risk_level` é o resultado real da fórmula. Enquanto os dois
+ * coincidirem não há diferença visível, mas ajustar um parâmetro em
+ * `app/routers/scenarios.py::DEMO_SCENARIOS` faria o card exibir um título
+ * contradizendo o próprio badge — exatamente o problema que a auditoria
+ * F6.2 corrigiu em `Alertas.tsx`. Aqui o título passa a vir da mesma fonte
+ * única de rótulos (`RISK_THEME`).
+ */
+function scenarioTitle(level: RiskLevel): string {
+  return `Cenário ${RISK_THEME[level].label.toLowerCase()}`;
+}
 
 export function Dashboard() {
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
@@ -81,12 +97,12 @@ export function Dashboard() {
             label="Maior risco"
             value={highest ? RISK_THEME[highest.result.risk_level].label : "—"}
             accentClass={highest ? RISK_THEME[highest.result.risk_level].textClass : undefined}
-            hint={highest ? SCENARIO_TITLES[highest.key as keyof ScenariosDemoResponse["scenarios"]] : undefined}
+            hint={highest ? scenarioTitle(highest.result.risk_level) : undefined}
           />
           <MetricCard
             label="Confiança média"
             value={avgConfidence != null ? `${Math.round(avgConfidence * 100)}%` : "—"}
-            hint="entre os 3 cenários"
+            hint={`entre os ${results.length} cenários`}
           />
           <MetricCard label="Comunicação" value="Simulada" hint="UniMesh/LoRa, implemented: false" />
         </div>
@@ -99,7 +115,7 @@ export function Dashboard() {
             <p className="text-sm text-slate-200">{highest.result.recommended_action}</p>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            Baseado no cenário de maior risco simulado ({SCENARIO_TITLES[highest.key as keyof ScenariosDemoResponse["scenarios"]].toLowerCase()}).
+            Baseado no cenário de maior risco simulado ({scenarioTitle(highest.result.risk_level).toLowerCase()}).
           </p>
         </SectionCard>
       )}
@@ -111,7 +127,7 @@ export function Dashboard() {
       {results.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {results.map(({ key, result }) => (
-            <RiskCard key={key} title={SCENARIO_TITLES[key]} result={result} />
+            <RiskCard key={key} title={scenarioTitle(result.risk_level)} result={result} />
           ))}
         </div>
       ) : (
