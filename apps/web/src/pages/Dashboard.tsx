@@ -10,7 +10,6 @@ import { RISK_THEME, riskWeight } from "../lib/riskTheme";
 import { RiskCard } from "../components/RiskCard";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
-import { SectionCard } from "../components/SectionCard";
 import { DemoNotice } from "../components/DemoNotice";
 import { RiskLegend } from "../components/RiskLegend";
 import { ErrorState } from "../components/ErrorState";
@@ -75,12 +74,23 @@ export function Dashboard() {
   return (
     <div>
       <PageHeader
+        eyebrow="Defesa Civil · Blumenau/SC"
         title="Painel operacional"
-        description="Resumo do motor de risco para a Defesa Civil de Blumenau/SC."
+        description="Resumo do motor de risco — os três cenários de referência avaliados em tempo de requisição."
         actions={
           apiOnline !== null && (
-            <span className={`text-xs font-mono px-2 py-1 rounded border ${apiOnline ? "border-risk-safe/40 text-risk-safe" : "border-risk-critical/40 text-risk-critical"}`}>
-              motor de risco: {apiOnline ? "online" : "offline"}
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                apiOnline
+                  ? "border-risk-safe/40 bg-risk-safe/10 text-risk-safe"
+                  : "border-risk-critical/40 bg-risk-critical/10 text-risk-critical"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${apiOnline ? "animate-breathe bg-risk-safe" : "bg-risk-critical"}`}
+                style={{ boxShadow: `0 0 8px var(${apiOnline ? "--glow-safe" : "--glow-critical"})` }}
+              />
+              motor de risco {apiOnline ? "online" : "offline"}
             </span>
           )
         }
@@ -91,10 +101,11 @@ export function Dashboard() {
       </div>
 
       {results.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <MetricCard label="Cenários avaliados" value={String(results.length)} hint="rodados pelo motor real" />
           <MetricCard
             label="Maior risco"
+            variant="text"
             value={highest ? RISK_THEME[highest.result.risk_level].label : "—"}
             accentClass={highest ? RISK_THEME[highest.result.risk_level].textClass : undefined}
             hint={highest ? scenarioTitle(highest.result.risk_level) : undefined}
@@ -104,34 +115,54 @@ export function Dashboard() {
             value={avgConfidence != null ? `${Math.round(avgConfidence * 100)}%` : "—"}
             hint={`entre os ${results.length} cenários`}
           />
-          <MetricCard label="Comunicação" value="Simulada" hint="UniMesh/LoRa, implemented: false" />
+          <MetricCard
+            label="Comunicação"
+            variant="text"
+            value="Simulada"
+            hint="UniMesh/LoRa, implemented: false"
+          />
         </div>
       )}
 
       {highest && (
-        <SectionCard title="Próxima ação recomendada" className="mb-6">
-          <div className="flex items-center gap-3">
-            <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${RISK_THEME[highest.result.risk_level].dotClass}`} />
-            <p className="text-sm text-slate-200">{highest.result.recommended_action}</p>
+        <div className="panel relative mb-6 overflow-hidden p-5">
+          {/* Filete na cor do maior risco: a ação recomendada é o que a
+              Defesa Civil precisa ler primeiro, então ela carrega a
+              severidade do cenário que a motivou. */}
+          <span
+            className={`absolute inset-y-0 left-0 w-[3px] ${RISK_THEME[highest.result.risk_level].barClass}`}
+            style={{ boxShadow: `0 0 16px var(${RISK_THEME[highest.result.risk_level].glowVar})` }}
+          />
+          <div className="flex flex-col gap-2 pl-2">
+            <p className="data-label">Próxima ação recomendada</p>
+            <p className="font-display text-lg font-semibold leading-snug text-white">
+              {highest.result.recommended_action}
+            </p>
+            <p className="text-xs text-slate-500">
+              Baseado no cenário de maior risco simulado (
+              {scenarioTitle(highest.result.risk_level).toLowerCase()}).
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
-            Baseado no cenário de maior risco simulado ({scenarioTitle(highest.result.risk_level).toLowerCase()}).
-          </p>
-        </SectionCard>
+        </div>
       )}
 
-      <div className="mb-3">
+      <div className="mb-4 flex items-center justify-between gap-4 border-b border-navy-700/70 pb-3">
+        <p className="data-label">Cenários avaliados</p>
         <RiskLegend />
       </div>
 
       {results.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {results.map(({ key, result }) => (
             <RiskCard key={key} title={scenarioTitle(result.risk_level)} result={result} />
           ))}
         </div>
       ) : (
-        <EmptyState title="Carregando cenários…" description="Consultando o motor de risco em /api/scenarios/demo." />
+        <EmptyState
+          loading
+          title="Carregando cenários…"
+          description="Consultando o motor de risco em /api/scenarios/demo."
+        />
       )}
     </div>
   );

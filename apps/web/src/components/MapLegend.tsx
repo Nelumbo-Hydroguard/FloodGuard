@@ -17,47 +17,60 @@ const HAND_CLASSES = [
   { label: "Alta", hex: RISK_THEME.critico.hex },
 ];
 
+function LegendGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="data-label mb-2">{title}</p>
+      <div className="flex flex-col gap-1.5">{children}</div>
+    </div>
+  );
+}
+
 export function MapLegend() {
   return (
-    <div className="absolute bottom-3 left-3 z-[1000] bg-navy-900/95 border border-navy-700 rounded p-3 text-xs text-slate-300 max-w-[240px] shadow-lg">
-      <p className="font-semibold uppercase tracking-wider text-slate-500 text-[10px] mb-2">
-        Suscetibilidade HAND
-      </p>
-      <div className="flex flex-col gap-1 mb-3">
-        {HAND_CLASSES.map((item) => (
-          <span key={item.label} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: item.hex }} />
-            {item.label}
+    <div className="panel-glass absolute bottom-6 left-6 z-[1000] w-[228px] animate-rise-in p-4">
+      <div className="flex flex-col gap-4">
+        <LegendGroup title="Suscetibilidade HAND">
+          {/* Escala contínua em vez de 4 quadradinhos soltos: HAND é um
+              gradiente de suscetibilidade, e a barra comunica isso melhor. */}
+          <div>
+            <div className="flex h-2 overflow-hidden rounded-full ring-1 ring-inset ring-navy-700">
+              {HAND_CLASSES.map((item) => (
+                <span key={item.label} className="flex-1" style={{ background: item.hex }} />
+              ))}
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10px] text-slate-500">
+              <span>Muito baixa</span>
+              <span>Alta</span>
+            </div>
+          </div>
+        </LegendGroup>
+
+        <LegendGroup title="Camadas">
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="h-0.5 w-4 shrink-0 rounded-full bg-accent" />
+            Limite de Blumenau/SC
           </span>
-        ))}
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="h-2 w-2 shrink-0 rotate-45 bg-accent" />
+            Abrigos simulados
+          </span>
+        </LegendGroup>
+
+        <LegendGroup title="Alertas simulados">
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400" />
+            Evento de demonstração
+          </span>
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="relative h-2.5 w-2.5 shrink-0">
+              <span className="absolute inset-[-3px] animate-ping rounded-full bg-risk-critical/40" />
+              <span className="relative block h-2.5 w-2.5 rounded-full bg-risk-critical" />
+            </span>
+            Crítico (destaque pulsante)
+          </span>
+        </LegendGroup>
       </div>
-
-      <p className="font-semibold uppercase tracking-wider text-slate-500 text-[10px] mb-1">
-        Limite municipal
-      </p>
-      <span className="flex items-center gap-1.5 mb-3">
-        <span className="h-0.5 w-4 shrink-0" style={{ background: "#22d3ee" }} />
-        Blumenau/SC
-      </span>
-
-      <p className="font-semibold uppercase tracking-wider text-slate-500 text-[10px] mb-1">
-        Marcadores
-      </p>
-      <span className="flex items-center gap-1.5 mb-1">
-        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: "#94a3b8" }} />
-        Alertas simulados (mesmos de /alertas)
-      </span>
-      <span className="flex items-center gap-1.5 mb-1">
-        <span className="relative h-2.5 w-2.5 shrink-0">
-          <span className="absolute inset-[-3px] rounded-full bg-risk-critical/40 animate-ping" />
-          <span className="relative block h-2.5 w-2.5 rounded-full bg-risk-critical" />
-        </span>
-        Alerta crítico (destaque pulsante)
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="h-2 w-2 shrink-0" style={{ background: "#22d3ee", transform: "rotate(45deg)" }} />
-        Abrigos simulados
-      </span>
     </div>
   );
 }

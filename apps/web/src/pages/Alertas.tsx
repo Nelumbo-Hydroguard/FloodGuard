@@ -50,6 +50,7 @@ export function Alertas() {
   return (
     <div>
       <PageHeader
+        eyebrow="Fila operacional"
         title="Alertas"
         description="Eventos simulados, derivados do motor de risco (/api/alerts/demo) — não há alerta real emitido pela Defesa Civil nesta PoC."
         actions={<RiskLegend />}
@@ -70,92 +71,118 @@ export function Alertas() {
         </DemoNotice>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-navy-700/70 bg-navy-900/50 p-2">
         <button
           onClick={() => setLevelFilter("todos")}
-          className={`text-xs px-3 py-1 rounded border ${
-            levelFilter === "todos" ? "border-accent text-accent" : "border-navy-600 text-slate-400 hover:text-white"
+          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            levelFilter === "todos"
+              ? "border-accent/50 bg-accent/10 text-accent"
+              : "border-transparent text-slate-400 hover:bg-navy-800 hover:text-slate-100"
           }`}
         >
-          Todos ({list.length})
+          Todos <span className="ml-1 font-mono text-slate-500">{list.length}</span>
         </button>
         {RISK_LEVELS_ORDERED.map((level) => {
           const count = list.filter((a) => a.risk_level === level).length;
+          const selected = levelFilter === level;
           return (
             <button
               key={level}
               onClick={() => setLevelFilter(level)}
-              className={`text-xs px-3 py-1 rounded border ${
-                levelFilter === level ? RISK_THEME[level].badgeClass : "border-navy-600 text-slate-400 hover:text-white"
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                selected
+                  ? RISK_THEME[level].badgeClass
+                  : "border-transparent text-slate-400 hover:bg-navy-800 hover:text-slate-100"
               }`}
             >
-              {RISK_THEME[level].label} ({count})
+              <span className={`h-1.5 w-1.5 rounded-full ${RISK_THEME[level].dotClass}`} />
+              {RISK_THEME[level].label}
+              <span className="font-mono text-slate-500">{count}</span>
             </button>
           );
         })}
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 ml-2 cursor-pointer select-none">
-          <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} className="accent-accent" />
+        <label className="ml-auto flex cursor-pointer select-none items-center gap-2 px-2 text-xs text-slate-400">
+          <input
+            type="checkbox"
+            checked={onlyActive}
+            onChange={(e) => setOnlyActive(e.target.checked)}
+            className="accent-accent"
+          />
           Somente ativos/críticos
         </label>
       </div>
 
       {list.length === 0 && !error && (
-        <EmptyState title="Carregando alertas…" description="Consultando /api/alerts/demo." />
+        <EmptyState loading title="Carregando alertas…" description="Consultando /api/alerts/demo." />
       )}
 
       {list.length > 0 && visible.length === 0 && (
         <EmptyState title="Nenhum alerta neste filtro" description="Tente outro nível ou desmarque “Somente ativos/críticos”." />
       )}
 
-      <div className="flex flex-col gap-3">
-        {visible.map((alert) => (
-          <div key={alert.id} className="border border-navy-700 bg-navy-900 rounded overflow-hidden">
-            <div className={`h-1 ${RISK_THEME[alert.risk_level].barClass}`} />
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white">{alert.title}</h3>
-                    <span className="text-[10px] font-mono uppercase text-slate-600 border border-navy-600 rounded px-1.5 py-0.5">
+      <div className="flex flex-col gap-4">
+        {visible.map((alert) => {
+          const theme = RISK_THEME[alert.risk_level];
+          return (
+            <article key={alert.id} className="panel panel-interactive overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                {/* Coluna de severidade: score grande sobre fundo tingido no
+                    nível do evento. A urgência é lida antes do texto. */}
+                <div
+                  className="flex shrink-0 flex-row items-center gap-4 border-b px-5 py-4 sm:w-[168px] sm:flex-col sm:items-start sm:justify-center sm:border-b-0 sm:border-r"
+                  style={{ borderColor: `${theme.hex}33`, backgroundColor: `${theme.hex}0f` }}
+                >
+                  <StatusBadge level={alert.risk_level} />
+                  <div>
+                    <p className={`font-mono text-[34px] font-semibold leading-none ${theme.textClass}`}>
+                      {Math.round(alert.risk_score * 100)}
+                      <span className="text-base text-slate-500">%</span>
+                    </p>
+                    <p className="data-label mt-1.5">
+                      confiança {Math.round(alert.confidence * 100)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1 p-5">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-base font-semibold text-white">{alert.title}</h3>
+                    <span className="rounded border border-navy-600 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
                       simulado
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Região: {alert.region ?? "não informada"} · {STATUS_LABEL[alert.status] ?? alert.status} ·{" "}
+                  <p className="mb-3 text-xs text-slate-500">
+                    {alert.region ?? "região não informada"} ·{" "}
+                    {STATUS_LABEL[alert.status] ?? alert.status} ·{" "}
                     {new Date(alert.timestamp).toLocaleString("pt-BR")}
                   </p>
+
+                  <p className="mb-3 text-sm leading-relaxed text-slate-400">{alert.explanation}</p>
+
+                  <div className="mb-4 rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
+                    <p className="data-label mb-1">Ação recomendada</p>
+                    <p className="text-sm leading-relaxed text-slate-200">{alert.recommended_action}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to={`/mapa?alert=${alert.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+                    >
+                      Ver no mapa →
+                    </Link>
+                    <Link
+                      to={`/alertas/${alert.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-navy-600 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
+                    >
+                      Ver detalhes
+                    </Link>
+                  </div>
                 </div>
-                <StatusBadge level={alert.risk_level} />
               </div>
-
-              <div className="flex items-center gap-3 mb-2 text-xs text-slate-500">
-                <span className="font-mono">score {Math.round(alert.risk_score * 100)}%</span>
-                <span className="font-mono">confiança {Math.round(alert.confidence * 100)}%</span>
-              </div>
-
-              <p className="text-sm text-slate-400 mb-2">{alert.explanation}</p>
-              <p className="text-sm mb-3">
-                <span className="text-slate-500">Ação recomendada: </span>
-                <span className="text-slate-200">{alert.recommended_action}</span>
-              </p>
-
-              <div className="flex gap-3">
-                <Link
-                  to={`/alertas/${alert.id}`}
-                  className="inline-block text-xs font-semibold text-accent hover:underline underline-offset-2"
-                >
-                  Ver detalhes →
-                </Link>
-                <Link
-                  to={`/mapa?alert=${alert.id}`}
-                  className="inline-block text-xs font-semibold text-accent hover:underline underline-offset-2"
-                >
-                  Ver no mapa →
-                </Link>
-              </div>
-            </div>
-          </div>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

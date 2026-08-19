@@ -1,3 +1,238 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Camada de design do FloodGuard.
+ *
+ * Antes da F10 este arquivo tinha só as 3 diretivas do Tailwind — todo o
+ * visual era utilitário solto, sem superfície, sem tipografia própria e com
+ * o Leaflet no tema claro padrão dentro de um app escuro. As classes abaixo
+ * existem para dar UMA definição de "painel", "rótulo de dado" e "valor de
+ * dado" ao produto inteiro, em vez de repetir a mesma combinação de
+ * utilitários em cada componente.
+ */
+
+@layer base {
+  :root {
+    /* Halo por nível de risco — usado em badges e marcadores. Mesmas 4 cores
+       de tailwind.config.ts, só que em rgba, porque box-shadow precisa de
+       alpha e a cor sólida do token não serve. */
+    --glow-safe: rgba(34, 197, 94, 0.35);
+    --glow-attention: rgba(234, 179, 8, 0.35);
+    --glow-alert: rgba(249, 115, 22, 0.35);
+    --glow-critical: rgba(239, 68, 68, 0.4);
+    --glow-accent: rgba(34, 211, 238, 0.3);
+  }
+
+  body {
+    @apply bg-navy-950 text-slate-100 antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Números tabulares em todo lugar que usa mono: score, %, coordenada.
+     Sem isso os dígitos "dançam" quando o valor muda. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-white;
+  }
+
+  /* Foco visível e consistente — o default do browser sumia no fundo escuro. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-navy-950;
+  }
+}
+
+@layer components {
+  /**
+   * Superfície padrão do produto. O gradiente sutil (mais claro no topo)
+   * junto da linha interna do shadow `panel` é o que dá volume — borda
+   * chapada de 1px, sozinha, lê como wireframe.
+   */
+  .panel {
+    @apply relative rounded-xl border border-navy-700/70 shadow-panel;
+    background-image: linear-gradient(180deg, rgba(21, 48, 77, 0.55) 0%, rgba(8, 23, 38, 0.92) 100%);
+  }
+
+  /** Variante para painéis que flutuam SOBRE o mapa. O blur só faz sentido
+      aqui: sobre fundo sólido ele custa performance e não muda nada. */
+  .panel-glass {
+    @apply relative rounded-xl border border-navy-700/70 shadow-panel-lg backdrop-blur-xl;
+    background-color: rgba(8, 23, 38, 0.82);
+  }
+
+  .panel-interactive {
+    @apply transition-[border-color,box-shadow,transform] duration-200;
+  }
+
+  .panel-interactive:hover {
+    @apply border-accent/30 shadow-panel-hover -translate-y-px;
+  }
+
+  /** Rótulo de dado: minúsculo, caixa alta, tracking aberto. */
+  .data-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500;
+  }
+
+  /** Valor de dado: mono, tabular, peso alto. */
+  .data-value {
+    @apply font-mono font-semibold text-white;
+  }
+
+  /** Faixa fina de severidade no topo de um card. */
+  .severity-strip {
+    @apply h-[3px] w-full;
+  }
+}
+
+/* ============================================================
+   LEAFLET — tema escuro
+   ============================================================
+   O Leaflet injeta popup/tooltip/controles em CSS próprio, com fundo branco
+   e Helvetica. Dentro do shell navy do FloodGuard isso era a inconsistência
+   visual mais gritante do produto (auditoria F10). Estes overrides ficam
+   fora de @layer de propósito: precisam vencer o CSS da biblioteca.
+   ============================================================ */
+
+.leaflet-container {
+  background: #081726;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(8, 23, 38, 0.97);
+  color: #e2e8f0;
+  border: 1px solid rgba(21, 48, 77, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 1);
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-popup-content {
+  margin: 0.85rem 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.leaflet-popup-tip {
+  background: rgba(8, 23, 38, 0.97);
+  border: 1px solid rgba(21, 48, 77, 0.9);
+  box-shadow: none;
+}
+
+.leaflet-popup-close-button {
+  color: #64748b !important;
+  padding: 0.5rem 0.5rem 0 0 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #22d3ee !important;
+  background: transparent !important;
+}
+
+.leaflet-tooltip {
+  background: rgba(8, 23, 38, 0.97);
+  border: 1px solid rgba(21, 48, 77, 0.9);
+  border-radius: 8px;
+  color: #e2e8f0;
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 1);
+}
+
+.leaflet-tooltip-top::before {
+  border-top-color: rgba(21, 48, 77, 0.9);
+}
+
+/* Controles de zoom no mesmo idioma dos painéis. */
+.leaflet-bar,
+.leaflet-bar a {
+  background: rgba(8, 23, 38, 0.9);
+  border-color: rgba(21, 48, 77, 0.9);
+  color: #cbd5e1;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-bar a:hover {
+  background: rgba(21, 48, 77, 0.95);
+  color: #22d3ee;
+}
+
+.leaflet-bar a:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.leaflet-bar a:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.leaflet-control-attribution {
+  background: rgba(4, 11, 20, 0.82) !important;
+  color: #64748b !important;
+  border-radius: 8px 0 0 0;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #040b14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #15304d;
+  border: 2px solid #040b14;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1e4166;
+}
+
+/* Barra de rolagem escondida onde ela atrapalha o layout (nav do header). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   ACESSIBILIDADE
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -14,6 +14,8 @@ export interface RiskTheme {
   dotClass: string;
   textClass: string;
   barClass: string;
+  /** Nome da custom property de halo definida em index.css (:root). */
+  glowVar: string;
 }
 
 export const RISK_THEME: Record<RiskLevel, RiskTheme> = {
@@ -24,6 +26,7 @@ export const RISK_THEME: Record<RiskLevel, RiskTheme> = {
     dotClass: "bg-risk-safe",
     textClass: "text-risk-safe",
     barClass: "bg-risk-safe",
+    glowVar: "--glow-safe",
   },
   atencao: {
     label: "Atenção",
@@ -32,6 +35,7 @@ export const RISK_THEME: Record<RiskLevel, RiskTheme> = {
     dotClass: "bg-risk-attention",
     textClass: "text-risk-attention",
     barClass: "bg-risk-attention",
+    glowVar: "--glow-attention",
   },
   alerta: {
     label: "Alerta",
@@ -40,6 +44,7 @@ export const RISK_THEME: Record<RiskLevel, RiskTheme> = {
     dotClass: "bg-risk-alert",
     textClass: "text-risk-alert",
     barClass: "bg-risk-alert",
+    glowVar: "--glow-alert",
   },
   critico: {
     label: "Crítico",
@@ -48,6 +53,7 @@ export const RISK_THEME: Record<RiskLevel, RiskTheme> = {
     dotClass: "bg-risk-critical",
     textClass: "text-risk-critical",
     barClass: "bg-risk-critical",
+    glowVar: "--glow-critical",
   },
 };
 

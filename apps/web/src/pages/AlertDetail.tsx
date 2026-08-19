@@ -7,6 +7,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { DemoNotice } from "../components/DemoNotice";
 import { FactorBar } from "../components/FactorBar";
 import { EmptyState } from "../components/EmptyState";
+import { RISK_THEME } from "../lib/riskTheme";
 
 const STATUS_LABEL: Record<string, string> = {
   simulated_monitoring: "Em monitoramento",
@@ -73,9 +74,12 @@ export function AlertDetail() {
     );
   }
 
+  const theme = RISK_THEME[alert.risk_level];
+
   return (
     <div>
       <PageHeader
+        eyebrow="Evento simulado"
         title={alert.title}
         description={`Região: ${alert.region ?? "não informada"} · ${new Date(alert.timestamp).toLocaleString("pt-BR")}`}
         actions={<StatusBadge level={alert.risk_level} />}
@@ -90,41 +94,82 @@ export function AlertDetail() {
         </DemoNotice>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <SectionCard title="Avaliação de risco">
-          <div className="flex items-baseline gap-3 mb-3">
-            <span className="text-3xl font-bold font-mono tabular-nums text-white">
-              {Math.round(alert.risk_score * 100)}%
-            </span>
-            <span className="text-xs text-slate-500">confiança {Math.round(alert.confidence * 100)}%</span>
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <SectionCard title="Avaliação de risco" className="md:col-span-2">
+          <div className="mb-5 flex items-end gap-6">
+            <div>
+              <p className="data-label">Score de risco</p>
+              <p className={`mt-1 font-mono text-[44px] font-semibold leading-none ${theme.textClass}`}>
+                {Math.round(alert.risk_score * 100)}
+                <span className="ml-0.5 text-xl text-slate-500">%</span>
+              </p>
+            </div>
+            <div className="pb-1.5">
+              <p className="data-label">Confiança</p>
+              <p className="mt-1 font-mono text-xl font-semibold leading-none text-slate-300">
+                {Math.round(alert.confidence * 100)}%
+              </p>
+            </div>
           </div>
-          <FactorBar label="Score de risco" value={alert.risk_score} />
+          <FactorBar label="Score de risco" value={alert.risk_score} hint="composto pelo motor" />
         </SectionCard>
 
-        <SectionCard title="Status do evento simulado">
-          <p className="text-sm text-slate-200 mb-1">{STATUS_LABEL[alert.status] ?? alert.status}</p>
-          <p className="text-xs text-slate-500 font-mono">{alert.status}</p>
-          <p className="text-xs text-slate-600 mt-2">source: {alert.source} · simulated: {String(alert.simulated)}</p>
+        <SectionCard title="Status do evento">
+          <p className="mb-1 text-sm font-medium text-slate-100">
+            {STATUS_LABEL[alert.status] ?? alert.status}
+          </p>
+          <p className="font-mono text-xs text-slate-500">{alert.status}</p>
+          <dl className="mt-4 flex flex-col gap-2 border-t border-navy-700/70 pt-4 text-xs">
+            <div className="flex justify-between gap-2">
+              <dt className="text-slate-500">source</dt>
+              <dd className="font-mono text-slate-300">{alert.source}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-slate-500">simulated</dt>
+              <dd className="font-mono text-risk-attention">{String(alert.simulated)}</dd>
+            </div>
+          </dl>
         </SectionCard>
       </div>
 
-      <SectionCard title="Justificativa" className="mb-4">
-        <p className="text-sm text-slate-400">{alert.explanation}</p>
+      <SectionCard title="Justificativa do motor" className="mb-4">
+        <p className="text-sm leading-relaxed text-slate-400">{alert.explanation}</p>
       </SectionCard>
 
-      <SectionCard title="Ação recomendada" className="mb-6">
-        <p className="text-sm text-slate-200">{alert.recommended_action}</p>
-      </SectionCard>
+      {/* Ação recomendada com o peso visual da severidade do próprio alerta —
+          é a saída acionável da tela, não mais um bloco de texto igual aos
+          outros. */}
+      <div className="panel relative mb-6 overflow-hidden p-5">
+        <span
+          className={`absolute inset-y-0 left-0 w-[3px] ${theme.barClass}`}
+          style={{ boxShadow: `0 0 16px var(${theme.glowVar})` }}
+        />
+        <div className="pl-2">
+          <p className="data-label mb-2">Ação recomendada</p>
+          <p className="font-display text-lg font-semibold leading-snug text-white">
+            {alert.recommended_action}
+          </p>
+        </div>
+      </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Link to="/alertas" className="text-sm text-accent hover:underline underline-offset-2">
-          ← Voltar para Alertas
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to={`/mapa?alert=${alert.id}`}
+          className="inline-flex items-center rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
+        >
+          Ver no mapa →
         </Link>
-        <Link to={`/mapa?alert=${alert.id}`} className="text-sm text-accent hover:underline underline-offset-2">
-          Ver no Mapa
-        </Link>
-        <Link to="/telemetria" className="text-sm text-accent hover:underline underline-offset-2">
+        <Link
+          to="/telemetria"
+          className="inline-flex items-center rounded-lg border border-navy-600 px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
+        >
           Testar outros valores em Telemetria
+        </Link>
+        <Link
+          to="/alertas"
+          className="inline-flex items-center px-2 py-2 text-sm text-slate-400 underline-offset-2 transition-colors hover:text-white hover:underline"
+        >
+          ← Voltar para Alertas
         </Link>
       </div>
     </div>

@@ -10,6 +10,8 @@ import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { DemoNotice } from "../components/DemoNotice";
 import { ErrorState } from "../components/ErrorState";
+import { EmptyState } from "../components/EmptyState";
+import { RISK_THEME } from "../lib/riskTheme";
 
 interface FormState {
   latitude: string;
@@ -74,7 +76,11 @@ const WEIGHT_BY_HAND_CLASS: Record<string, string> = Object.fromEntries(
 );
 
 function inputClass() {
-  return "w-full rounded border border-navy-600 bg-navy-950 px-3 py-1.5 text-sm text-slate-100 focus:border-accent focus:outline-none";
+  return "w-full rounded-lg border border-navy-600/80 bg-navy-950/80 px-3 py-2 font-mono text-sm text-slate-100 transition-colors placeholder:font-sans placeholder:text-slate-600 hover:border-navy-600 focus:border-accent focus:outline-none";
+}
+
+function fieldLabelClass() {
+  return "flex flex-col gap-1.5 text-xs font-medium text-slate-300";
 }
 
 export function Telemetria() {
@@ -158,6 +164,7 @@ export function Telemetria() {
   return (
     <div>
       <PageHeader
+        eyebrow="Console do motor de risco"
         title="Telemetria"
         description="Ferramenta de teste operacional do motor de risco — nenhum sensor real por trás deste formulário."
       />
@@ -169,51 +176,55 @@ export function Telemetria() {
         </DemoNotice>
       </div>
 
-      <SectionCard title="Exemplos rápidos" subtitle="Preenche o formulário com um cenário de referência." className="mb-6">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => applyExample("seguro")}
-            className="rounded border border-risk-safe/40 text-risk-safe px-3 py-1.5 text-sm hover:bg-risk-safe/10"
-          >
-            Seguro
-          </button>
-          <button
-            type="button"
-            onClick={() => applyExample("alerta")}
-            className="rounded border border-risk-alert/40 text-risk-alert px-3 py-1.5 text-sm hover:bg-risk-alert/10"
-          >
-            Alerta
-          </button>
-          <button
-            type="button"
-            onClick={() => applyExample("critico")}
-            className="rounded border border-risk-critical/40 text-risk-critical px-3 py-1.5 text-sm hover:bg-risk-critical/10"
-          >
-            Crítico
-          </button>
+      {/* Entrada à esquerda, saída à direita e fixa: é o gesto de uma
+          ferramenta operacional — mexe no parâmetro, vê o motor responder,
+          sem perder o resultado de vista ao rolar o formulário. */}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex flex-col gap-4">
+      <SectionCard
+        title="Exemplos rápidos"
+        subtitle="Preenche o formulário com um cenário de referência."
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {(["seguro", "alerta", "critico"] as const).map((key) => {
+            const theme = RISK_THEME[key === "critico" ? "critico" : key];
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => applyExample(key)}
+                className="group flex items-center justify-center gap-2 rounded-lg border border-navy-600/80 bg-navy-950/50 px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:border-navy-600 hover:bg-navy-800"
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${theme.dotClass}`}
+                  style={{ boxShadow: `0 0 8px var(${theme.glowVar})` }}
+                />
+                {theme.label}
+              </button>
+            );
+          })}
         </div>
       </SectionCard>
 
-      <SectionCard title="Parâmetros da leitura" className="mb-6">
+      <SectionCard title="Parâmetros da leitura">
         <form onSubmit={handleEvaluate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Latitude
             <input className={inputClass()} value={form.latitude} onChange={field("latitude")} required />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Longitude
             <input className={inputClass()} value={form.longitude} onChange={field("longitude")} required />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Chuva acumulada (mm)
             <input className={inputClass()} type="number" min={0} value={form.rainfall_mm} onChange={field("rainfall_mm")} required />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Nível d'água (m)
             <input className={inputClass()} type="number" min={0} step={0.1} value={form.water_level_m} onChange={field("water_level_m")} required />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Nível d'água anterior (m) — usado para calcular tendência
             <input
               className={inputClass()}
@@ -225,7 +236,7 @@ export function Telemetria() {
               placeholder="em branco = tendência neutra"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Classe HAND
             <select className={inputClass()} value={form.hand_class_id} onChange={handleHandClassChange}>
               <option value="">sem contexto HAND (fallback)</option>
@@ -236,11 +247,11 @@ export function Telemetria() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Peso HAND (0 a 1) — preenchido pela classe; edite para sobrepor
             <input className={inputClass()} type="number" min={0} max={1} step={0.05} value={form.hand_risk_weight} onChange={field("hand_risk_weight")} />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className={fieldLabelClass()}>
             Status de comunicação
             <select className={inputClass()} value={form.communication_status} onChange={field("communication_status")}>
               <option value="ok">ok</option>
@@ -249,16 +260,16 @@ export function Telemetria() {
               <option value="unknown">unknown</option>
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300 md:col-span-2">
+          <label className={`${fieldLabelClass()} md:col-span-2`}>
             Região (opcional — usada no payload simulado e no lookup HAND mockado)
             <input className={inputClass()} value={form.region} onChange={field("region")} />
           </label>
 
-          <div className="md:col-span-2 flex gap-3 pt-2">
+          <div className="flex flex-col gap-2 border-t border-navy-700/70 pt-4 sm:flex-row md:col-span-2">
             <button
               type="submit"
               disabled={loading !== null}
-              className="rounded bg-accent px-4 py-2 text-sm font-semibold text-navy-950 hover:bg-accent/90 disabled:opacity-50"
+              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-navy-950 shadow-[0_0_20px_var(--glow-accent)] transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:shadow-none"
             >
               {loading === "evaluate" ? "Avaliando…" : "Avaliar risco"}
             </button>
@@ -266,40 +277,45 @@ export function Telemetria() {
               type="button"
               onClick={handleMeshPayload}
               disabled={loading !== null}
-              className="rounded border border-navy-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-accent hover:text-accent disabled:opacity-50"
+              className="rounded-lg border border-navy-600 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
             >
-              {loading === "mesh" ? "Gerando…" : "Gerar payload UniMesh/LoRa simulado"}
+              {loading === "mesh" ? "Gerando…" : "Gerar payload UniMesh/LoRa"}
             </button>
           </div>
         </form>
       </SectionCard>
-
-      {error && (
-        <div className="mb-6">
-          <ErrorState message={error} />
         </div>
-      )}
 
-      {result && (
-        <div className="max-w-md mb-6">
-          <RiskCard title="Resultado da avaliação" result={result} />
+        <div className="flex flex-col gap-4 lg:sticky lg:top-[4.5rem]">
+          {error && <ErrorState message={error} />}
+
+          {result ? (
+            <RiskCard title="Resultado da avaliação" result={result} />
+          ) : (
+            !error && (
+              <EmptyState
+                title="Nenhuma avaliação ainda"
+                description="Escolha um exemplo rápido ou ajuste os parâmetros e clique em “Avaliar risco” para ver o motor decompor o score."
+              />
+            )
+          )}
+
+          {meshPayload && (
+            <SectionCard title="Payload UniMesh/LoRa simulado">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-risk-critical/40 bg-risk-critical/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-risk-critical">
+                  implemented: false
+                </span>
+                <span className="text-[11px] text-slate-500">transmissão real não implementada</span>
+              </div>
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-navy-700 bg-navy-950 p-3 font-mono text-[11px] leading-relaxed text-slate-400">
+                {JSON.stringify(meshPayload, null, 2)}
+              </pre>
+              <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{meshPayload.note}</p>
+            </SectionCard>
+          )}
         </div>
-      )}
-
-      {meshPayload && (
-        <SectionCard title="Payload UniMesh/LoRa simulado" className="max-w-md">
-          <div className="flex items-center gap-2 mb-3 text-xs font-mono">
-            <span className="rounded border border-risk-critical/40 bg-risk-critical/10 text-risk-critical px-2 py-0.5">
-              implemented: false
-            </span>
-            <span className="text-slate-500">transmissão real não implementada</span>
-          </div>
-          <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap bg-navy-950 rounded p-3 border border-navy-700">
-            {JSON.stringify(meshPayload, null, 2)}
-          </pre>
-          <p className="text-xs text-slate-600 mt-2">{meshPayload.note}</p>
-        </SectionCard>
-      )}
+      </div>
     </div>
   );
 }

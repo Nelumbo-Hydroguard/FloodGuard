@@ -27,7 +27,7 @@ export function NotFound() {
         description="A rota acessada não existe nesta plataforma."
       />
 
-      <div className="border border-navy-700 bg-navy-900 rounded p-4 mb-6">
+      <div className="panel p-4 mb-6">
         <p className="text-sm text-slate-400">
           Nenhuma tela responde por{" "}
           <code className="text-risk-attention font-mono break-all">{location.pathname}</code>.
@@ -43,7 +43,7 @@ export function NotFound() {
           <Link
             key={item.to}
             to={item.to}
-            className="group rounded border border-navy-700 bg-navy-900 p-4 transition-colors hover:border-accent-muted"
+            className="panel panel-interactive group p-4"
           >
             <span className="block font-semibold text-slate-100 group-hover:text-accent">
               {item.label} →

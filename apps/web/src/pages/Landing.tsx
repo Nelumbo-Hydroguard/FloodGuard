@@ -56,21 +56,21 @@ export function Landing() {
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="border border-navy-700 bg-navy-900 rounded p-4">
+          <div className="panel p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Diferencial</p>
             <p className="text-sm text-slate-300 mt-1">
               Camada <strong className="text-slate-100">HAND</strong> real de Blumenau — suscetibilidade
               topográfica cruzada com chuva e nível d'água.
             </p>
           </div>
-          <div className="border border-navy-700 bg-navy-900 rounded p-4">
+          <div className="panel p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Usuário</p>
             <p className="text-sm text-slate-300 mt-1">
               Operador da <strong className="text-slate-100">Defesa Civil</strong> — não é app de
               cidadão, é ferramenta de sala de operação.
             </p>
           </div>
-          <div className="border border-navy-700 bg-navy-900 rounded p-4">
+          <div className="panel p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Motor de risco</p>
             <p className="text-sm text-slate-300 mt-1">
               Fórmula <strong className="text-slate-100">explicável e auditável</strong> — toda avaliação
@@ -84,10 +84,10 @@ export function Landing() {
             <Link
               key={item.to}
               to={item.to}
-              className={`group rounded border p-4 transition-colors ${
+              className={`group rounded-xl border p-4 shadow-panel transition-colors ${
                 item.primary
-                  ? "border-accent bg-accent/10 hover:bg-accent/20"
-                  : "border-navy-700 bg-navy-900 hover:border-accent-muted"
+                  ? "border-accent/60 bg-accent/10 hover:bg-accent/20"
+                  : "panel panel-interactive"
               }`}
             >
               <span

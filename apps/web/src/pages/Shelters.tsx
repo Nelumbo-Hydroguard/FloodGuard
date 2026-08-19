@@ -55,6 +55,7 @@ export function Shelters() {
   return (
     <div>
       <PageHeader
+        eyebrow="Capacidade de acolhimento"
         title="Abrigos"
         description="Dados simulados para demonstração — capacidade e ocupação de abrigos de apoio, consumidos de /api/shelters/demo."
       />
@@ -72,11 +73,11 @@ export function Shelters() {
       </div>
 
       {list.length === 0 && !error && (
-        <EmptyState title="Carregando abrigos…" description="Consultando /api/shelters/demo." />
+        <EmptyState loading title="Carregando abrigos…" description="Consultando /api/shelters/demo." />
       )}
 
       {list.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <MetricCard label="Abrigos simulados" value={String(list.length)} hint="via API, sem persistência" />
           <MetricCard label="Capacidade total" value={String(totalCapacity)} hint="pessoas" />
           <MetricCard label="Ocupação atual" value={String(totalOccupancy)} hint="pessoas acolhidas" />
@@ -89,43 +90,63 @@ export function Shelters() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {list.map((shelter) => {
           const style = statusStyleFor(shelter.status);
+          const free = shelter.capacity_total - shelter.capacity_used;
           return (
-            <div key={shelter.id} className="border border-navy-700 bg-navy-900 rounded p-4">
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white">{shelter.name}</h3>
-                    <span className="text-[10px] font-mono uppercase text-slate-600 border border-navy-600 rounded px-1.5 py-0.5">
-                      simulado
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {shelter.address} · Região: {shelter.region}
-                  </p>
+            <div key={shelter.id} className="panel panel-interactive flex flex-col p-5">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-display text-base font-semibold leading-snug text-white">
+                    {shelter.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">{shelter.region}</p>
                 </div>
                 <span
-                  className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide shrink-0 ${style.className}`}
+                  className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${style.className}`}
                 >
                   {style.label}
                 </span>
               </div>
 
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Ocupação</span>
-                <span className="font-mono tabular-nums">
-                  {shelter.capacity_used} / {shelter.capacity_total} ({shelter.occupancy_percent}%)
-                </span>
+              {/* Vagas livres é o número que a Defesa Civil realmente precisa
+                  na hora de encaminhar alguém — vem antes da ocupação. */}
+              <div className="mb-4 flex items-end gap-5">
+                <div>
+                  <p className="data-label">Vagas livres</p>
+                  <p
+                    className={`mt-1 font-mono text-[32px] font-semibold leading-none ${
+                      free > 0 ? "text-risk-safe" : "text-risk-critical"
+                    }`}
+                  >
+                    {free}
+                  </p>
+                </div>
+                <div className="pb-1">
+                  <p className="data-label">Ocupação</p>
+                  <p className="mt-1 font-mono text-base font-semibold leading-none text-slate-300">
+                    {shelter.capacity_used}
+                    <span className="text-slate-600">/{shelter.capacity_total}</span>
+                  </p>
+                </div>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-navy-700 mb-2">
+
+              <div className="mb-1.5 flex justify-between text-[11px] text-slate-500">
+                <span>{shelter.occupancy_percent}% ocupado</span>
+                <span className="font-mono uppercase tracking-wider text-slate-600">simulado</span>
+              </div>
+              <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-navy-800 ring-1 ring-inset ring-navy-700/80">
                 <div
-                  className={`h-1.5 rounded-full ${style.barClass}`}
+                  className={`h-full rounded-full transition-[width] duration-500 ${style.barClass}`}
                   style={{ width: `${Math.min(100, shelter.occupancy_percent)}%` }}
                 />
               </div>
-              <p className="text-xs text-slate-500">{shelter.notes}</p>
+
+              <p className="mb-3 text-xs leading-relaxed text-slate-500">{shelter.notes}</p>
+              <p className="mt-auto border-t border-navy-700/70 pt-3 text-[11px] leading-relaxed text-slate-600">
+                {shelter.address}
+              </p>
             </div>
           );
         })}

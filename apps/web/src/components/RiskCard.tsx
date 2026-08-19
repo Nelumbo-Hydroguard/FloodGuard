@@ -5,44 +5,63 @@ import { RISK_THEME } from "../lib/riskTheme";
 
 export function RiskCard({ title, result }: { title: string; result: RiskEvaluationResponse }) {
   const theme = RISK_THEME[result.risk_level];
+  const score = Math.round(result.risk_score * 100);
 
   return (
-    <div className="border border-navy-700 bg-navy-900 rounded overflow-hidden flex flex-col">
-      <div className={`h-1 ${theme.barClass}`} />
-      <div className="p-4 flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold text-white">{title}</h3>
-            {result.region && <p className="text-xs text-slate-500">{result.region}</p>}
+    <div className="panel panel-interactive flex flex-col overflow-hidden">
+      <div className={`severity-strip ${theme.barClass}`} style={{ boxShadow: `0 0 16px var(${theme.glowVar})` }} />
+
+      <div className="flex flex-col gap-5 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate font-display text-base font-semibold text-white">{title}</h3>
+            {result.region && <p className="mt-0.5 text-xs text-slate-500">{result.region}</p>}
           </div>
           <StatusBadge level={result.risk_level} />
         </div>
 
-        <div className="flex items-baseline gap-3">
-          <span className="text-3xl font-bold font-mono tabular-nums text-white">
-            {Math.round(result.risk_score * 100)}%
-          </span>
-          <span className="text-xs text-slate-500">
-            confiança {Math.round(result.confidence * 100)}%
-            {!result.spatial_context_available && (
-              <span className="text-risk-attention"> · sem contexto HAND</span>
-            )}
-          </span>
+        {/* Score e confiança lado a lado, com o score dominando a hierarquia:
+            é o número que a Defesa Civil lê primeiro. */}
+        <div className="flex items-end gap-4">
+          <div>
+            <p className="data-label">Score de risco</p>
+            <p className={`mt-1 font-mono text-[40px] font-semibold leading-none ${theme.textClass}`}>
+              {score}
+              <span className="ml-0.5 text-lg text-slate-500">%</span>
+            </p>
+          </div>
+          <div className="pb-1">
+            <p className="data-label">Confiança</p>
+            <p className="mt-1 font-mono text-lg font-semibold leading-none text-slate-300">
+              {Math.round(result.confidence * 100)}%
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <FactorBar label="HAND" value={result.factors.hand_weight} />
-          <FactorBar label="Chuva" value={result.factors.rainfall_factor} />
-          <FactorBar label="Nível d'água" value={result.factors.water_level_factor} />
-          <FactorBar label="Tendência" value={result.factors.trend_factor} />
+        {!result.spatial_context_available && (
+          <p className="-mt-2 text-[11px] text-risk-attention">
+            Sem contexto HAND — motor usou fallback espacial.
+          </p>
+        )}
+
+        <div>
+          <p className="data-label mb-3">Decomposição do risco</p>
+          <div className="flex flex-col gap-3">
+            <FactorBar label="HAND" value={result.factors.hand_weight} hint="suscetibilidade" />
+            <FactorBar label="Chuva" value={result.factors.rainfall_factor} hint="acumulada" />
+            <FactorBar label="Nível d'água" value={result.factors.water_level_factor} />
+            <FactorBar label="Tendência" value={result.factors.trend_factor} hint="50% = estável" />
+          </div>
         </div>
 
-        <p className="text-sm text-slate-400">{result.explanation}</p>
-
-        <p className="text-sm border-t border-navy-700 pt-2">
-          <span className="text-slate-500">Ação recomendada: </span>
-          <span className="text-slate-200">{result.recommended_action}</span>
+        <p className="border-t border-navy-700/70 pt-4 text-sm leading-relaxed text-slate-400">
+          {result.explanation}
         </p>
+
+        <div className="rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
+          <p className="data-label mb-1.5">Ação recomendada</p>
+          <p className="text-sm leading-relaxed text-slate-200">{result.recommended_action}</p>
+        </div>
       </div>
     </div>
   );

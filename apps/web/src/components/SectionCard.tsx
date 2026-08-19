@@ -5,18 +5,23 @@ export function SectionCard({
   subtitle,
   children,
   className = "",
+  actions,
 }: {
   title?: string;
   subtitle?: string;
   children: ReactNode;
   className?: string;
+  actions?: ReactNode;
 }) {
   return (
-    <section className={`border border-navy-700 bg-navy-900 rounded p-4 ${className}`}>
+    <section className={`panel p-5 ${className}`}>
       {title && (
-        <div className="mb-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</h2>
-          {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="data-label">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+          </div>
+          {actions && <div className="shrink-0">{actions}</div>}
         </div>
       )}
       {children}
