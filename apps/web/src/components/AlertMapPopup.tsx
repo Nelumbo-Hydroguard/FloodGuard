@@ -19,37 +19,65 @@ const STATUS_LABEL: Record<string, string> = {
  * ao padrão visual do FloodGuard (Popup do Leaflet + tokens de RISK_THEME,
  * não o modal/side-panel deles) e aos campos que o motor de risco do
  * FloodGuard realmente calcula (ver docs/auditoria-mapa-benvenutti-f9-1.md).
+ *
+ * Cores seguem o tema ESCURO do popup definido em index.css (F10). Antes o
+ * popup do Leaflet era branco e este card era escrito para fundo claro.
  */
 export function AlertMapPopup({ alert }: { alert: DemoAlert }) {
   const theme = RISK_THEME[alert.risk_level];
 
   return (
-    <div className="min-w-[220px] max-w-[260px] text-navy-950">
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: theme.hex }} />
-        <strong className="text-sm">{alert.title}</strong>
+    <div className="min-w-[236px] max-w-[268px]">
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className={`h-2 w-2 shrink-0 rounded-full ${theme.dotClass}`}
+          style={{ boxShadow: `0 0 8px var(${theme.glowVar})` }}
+        />
+        <strong className="text-[13px] font-semibold text-white">{alert.title}</strong>
       </div>
-      <p className="text-[11px] text-slate-600 mb-1.5">
-        Região: {alert.region ?? "não informada"} · {STATUS_LABEL[alert.status] ?? alert.status}
+
+      <p className="mb-3 text-[11px] text-slate-500">
+        {alert.region ?? "região não informada"} · {STATUS_LABEL[alert.status] ?? alert.status}
       </p>
-      <p className="text-[11px] mb-1.5">
-        <span className="font-mono">score {Math.round(alert.risk_score * 100)}%</span>{" "}
-        <span className="font-mono">· confiança {Math.round(alert.confidence * 100)}%</span>
+
+      <div className="mb-3 flex gap-4">
+        <div>
+          <p className="data-label">Score</p>
+          <p className={`font-mono text-lg font-semibold leading-tight ${theme.textClass}`}>
+            {Math.round(alert.risk_score * 100)}%
+          </p>
+        </div>
+        <div>
+          <p className="data-label">Confiança</p>
+          <p className="font-mono text-lg font-semibold leading-tight text-slate-300">
+            {Math.round(alert.confidence * 100)}%
+          </p>
+        </div>
+      </div>
+
+      <p className="mb-3 text-[11px] leading-relaxed text-slate-400">{alert.explanation}</p>
+
+      <div className="mb-3 rounded-lg border border-navy-700 bg-navy-950/70 p-2.5">
+        <p className="data-label mb-1">Ação recomendada</p>
+        <p className="text-[11px] leading-relaxed text-slate-200">{alert.recommended_action}</p>
+      </div>
+
+      <p className="mb-2.5 border-t border-navy-700 pt-2 font-mono text-[10px] uppercase tracking-wide text-slate-600">
+        [simulado] não é alerta oficial da Defesa Civil
       </p>
-      <p className="text-xs text-slate-700 mb-1.5">{alert.explanation}</p>
-      <p className="text-xs mb-2">
-        <span className="text-slate-600">Ação recomendada: </span>
-        <span className="font-medium">{alert.recommended_action}</span>
-      </p>
-      <p className="text-[10px] font-mono uppercase text-slate-500 border-t border-slate-300 pt-1.5 mb-1.5">
-        [simulado] evento de demonstração — não é alerta oficial da Defesa Civil
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Link to={`/alertas/${alert.id}`} className="text-xs font-semibold text-accent-muted hover:underline underline-offset-2">
+
+      <div className="flex flex-wrap gap-3">
+        <Link
+          to={`/alertas/${alert.id}`}
+          className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+        >
           Ver detalhes →
         </Link>
         {alert.suggested_next_step && (
-          <Link to={alert.suggested_next_step} className="text-xs font-semibold text-accent-muted hover:underline underline-offset-2">
+          <Link
+            to={alert.suggested_next_step}
+            className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+          >
             Testar em Telemetria →
           </Link>
         )}

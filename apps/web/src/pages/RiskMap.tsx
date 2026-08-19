@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import L from "leaflet";
-import { GeoJSON, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { GeoJSON, MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import {
   fetchDemoAlerts,
@@ -18,10 +18,9 @@ import {
 import { RISK_THEME, type RiskTheme } from "../lib/riskTheme";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
-import { DemoNotice } from "../components/DemoNotice";
 import { MapLegend } from "../components/MapLegend";
+import { MapAlertRail } from "../components/MapAlertRail";
 import { ErrorState } from "../components/ErrorState";
-import { EmptyState } from "../components/EmptyState";
 import { AlertMapPopup } from "../components/AlertMapPopup";
 
 const BLUMENAU_CENTER: [number, number] = [-26.9194, -49.0661];
@@ -53,7 +52,7 @@ function alertIcon(theme: RiskTheme, level: RiskLevel) {
       : "";
   return L.divIcon({
     className: "",
-    html: `<div style="position:relative;width:16px;height:16px;">${pulse}<div style="position:relative;width:16px;height:16px;border-radius:9999px;background:${theme.hex};border:2px solid #040b14;box-shadow:0 0 0 2px ${theme.hex}55;"></div></div>`,
+    html: `<div style="position:relative;width:16px;height:16px;">${pulse}<div style="position:relative;width:16px;height:16px;border-radius:9999px;background:${theme.hex};border:2px solid #040b14;box-shadow:0 0 0 2px ${theme.hex}55, 0 0 12px ${theme.hex}99;"></div></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
@@ -64,7 +63,7 @@ function alertIcon(theme: RiskTheme, level: RiskLevel) {
 function shelterIcon() {
   return L.divIcon({
     className: "",
-    html: `<div style="width:14px;height:14px;background:#22d3ee;border:2px solid #040b14;transform:rotate(45deg);"></div>`,
+    html: `<div style="width:14px;height:14px;background:#22d3ee;border:2px solid #040b14;transform:rotate(45deg);box-shadow:0 0 10px rgba(34,211,238,0.5);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
@@ -72,7 +71,8 @@ function shelterIcon() {
 
 /**
  * Foca (voa até) e abre o popup do alerta indicado por `?alert=<id>` na URL
- * (F9.1) — usado pelos links "Ver no mapa" de /alertas e /alertas/:id.
+ * (F9.1) — usado pelos links "Ver no mapa" de /alertas e /alertas/:id, e
+ * pela trilha lateral de alertas (F10).
  * Precisa estar dentro de <MapContainer> pra ter acesso ao `useMap()`.
  */
 function MapAlertFocus({
@@ -92,17 +92,23 @@ function MapAlertFocus({
     if (!alert) return;
 
     map.flyTo([alert.latitude, alert.longitude], 13, { duration: 0.8 });
-    const timer = setTimeout(() => {
-      markerRefs.current[alert.id]?.openPopup();
-    }, 500);
-    return () => clearTimeout(timer);
+
+    // Abrir no `moveend`, não num setTimeout menor que a animação: abrindo
+    // durante o voo, o autoPan do Leaflet calculava a posição contra um
+    // enquadramento intermediário e o popup terminava cortado pelo topo do
+    // mapa (achado na validação visual da F10).
+    const openPopup = () => markerRefs.current[alert.id]?.openPopup();
+    map.once("moveend", openPopup);
+    return () => {
+      map.off("moveend", openPopup);
+    };
   }, [focusId, alerts, map, markerRefs]);
 
   return null;
 }
 
 export function RiskMap() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const focusAlertId = searchParams.get("alert");
 
   const [demoMap, setDemoMap] = useState<DemoMapResponse | null>(null);
@@ -171,7 +177,7 @@ export function RiskMap() {
 
   if (geoError) {
     return (
-      <div>
+      <div className="mx-auto w-full max-w-7xl p-6">
         <PageHeader title="Mapa de risco" description="Blumenau/SC — camadas HAND e cenários simulados." />
         <ErrorState message={geoError} />
       </div>
@@ -179,50 +185,33 @@ export function RiskMap() {
   }
 
   const usingFallback = demoMap?.source === "static_fallback";
+  const layersReady = Boolean(boundary || handZones);
 
   return (
     <div>
-      <PageHeader
-        title="Mapa de risco"
-        description="Limite municipal, zonas de suscetibilidade HAND e cenários simulados — Blumenau/SC."
-      />
-
-      <div className="mb-4">
-        <DemoNotice>
-          Marcadores de alerta são eventos simulados de demonstração (mesmos 3 de{" "}
-          <Link to="/alertas" className="text-accent underline underline-offset-2">
-            /alertas
-          </Link>
-          ) — não são alertas oficiais emitidos pela Defesa Civil. O mapa apoia a
-          decisão, não a substitui.
-          {usingFallback && (
-            <>
-              {" "}Camadas HAND servidas por arquivo estático — PostGIS
-              indisponível neste ambiente (ver{" "}
-              <code className="text-slate-400">docs/metodologia-hand.md</code>).
-            </>
-          )}
-        </DemoNotice>
-      </div>
-
-      {demoMap && usingFallback && (
-        <p className="text-xs text-slate-600 mb-3 font-mono">
-          [fallback estático] {demoMap.message}
-        </p>
-      )}
-
-      {!boundary && !handZones && !geoError && (
-        <div className="mb-4">
-          <EmptyState title="Carregando camadas geoespaciais…" />
-        </div>
-      )}
-
-      <div className="relative h-[560px] w-full rounded overflow-hidden border border-navy-700">
-        <MapContainer center={BLUMENAU_CENTER} zoom={11} style={{ height: "100%", width: "100%", background: "#081726" }}>
+      {/* O mapa ocupa a viewport abaixo do header (h-14 = 3.5rem em
+          Layout.tsx). É a peça central da demonstração: enquadrado numa
+          caixa de 560px no meio da coluna de texto, lia como figura de
+          relatório. Os blocos de metodologia continuam logo abaixo. */}
+      <section className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
+        <MapContainer
+          center={BLUMENAU_CENTER}
+          zoom={11}
+          zoomControl={false}
+          style={{ height: "100%", width: "100%", background: "#081726" }}
+        >
+          {/* Basemap escuro (CARTO dark_all): o tile padrão do OSM é claro e,
+              dentro do shell navy, roubava toda a atenção das camadas HAND —
+              as cores de risco perdiam contraste sobre ruas brancas. Mesma
+              biblioteca, só troca de URL de tile. */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
+
+          {/* Zoom movido pro canto inferior direito: no topo-esquerdo ele
+              ficava embaixo do painel de título do HUD. */}
+          <ZoomControl position="bottomright" />
 
           {handZones && (
             <GeoJSON
@@ -231,7 +220,17 @@ export function RiskMap() {
               style={(feature) => {
                 const susceptibility = feature?.properties?.susceptibility ?? "";
                 const theme = themeForSusceptibility(susceptibility);
-                return { color: theme.hex, weight: 1, fillColor: theme.hex, fillOpacity: 0.35 };
+                // Traço fino e translúcido: com weight 1 opaco, o contorno de
+                // cada polígono dominava a leitura em zoom alto e a mancha de
+                // suscetibilidade sumia sob a malha de bordas. O preenchimento
+                // (o dado que importa) é o mesmo.
+                return {
+                  color: theme.hex,
+                  weight: 0.5,
+                  opacity: 0.35,
+                  fillColor: theme.hex,
+                  fillOpacity: 0.35,
+                };
               }}
               onEachFeature={(feature, layer) => {
                 const p = feature.properties ?? {};
@@ -274,7 +273,10 @@ export function RiskMap() {
                 else delete alertMarkerRefs.current[alert.id];
               }}
             >
-              <Popup>
+              {/* Padding do autoPan reserva o espaço dos painéis do HUD
+                  (título à esquerda, trilha à direita) pra o popup nunca
+                  abrir por baixo deles. */}
+              <Popup autoPanPaddingTopLeft={[372, 32]} autoPanPaddingBottomRight={[332, 32]}>
                 <AlertMapPopup alert={alert} />
               </Popup>
             </Marker>
@@ -285,59 +287,113 @@ export function RiskMap() {
           {shelters?.map((shelter) => (
             <Marker key={shelter.id} position={[shelter.latitude, shelter.longitude]} icon={shelterIcon()}>
               <Popup>
-                <strong>{shelter.name}</strong> <em style={{ fontSize: "0.8em" }}>(simulado)</em>
-                <br />
-                Ocupação: {shelter.capacity_used}/{shelter.capacity_total} ({shelter.occupancy_percent}%)
-                <br />
-                <span style={{ fontSize: "0.85em" }}>{shelter.notes}</span>
+                <div className="min-w-[200px]">
+                  <strong className="text-[13px] font-semibold text-white">{shelter.name}</strong>
+                  <p className="mt-1 text-[11px] text-slate-500">{shelter.region}</p>
+                  <p className="mt-2 font-mono text-sm text-slate-200">
+                    {shelter.capacity_used}/{shelter.capacity_total}{" "}
+                    <span className="text-slate-500">({shelter.occupancy_percent}%)</span>
+                  </p>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{shelter.notes}</p>
+                </div>
               </Popup>
             </Marker>
           ))}
         </MapContainer>
 
+        {/* ── HUD ───────────────────────────────────────────────────────── */}
+
+        <div className="panel-glass absolute left-6 top-6 z-[1000] max-w-[340px] animate-rise-in p-4">
+          <p className="data-label text-accent/80">Blumenau/SC</p>
+          <h1 className="mt-1.5 font-display text-xl font-bold leading-tight text-white">
+            Mapa de risco
+          </h1>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+            Limite municipal, zonas de suscetibilidade HAND e eventos simulados.
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-700/70 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-accent">
+              <span className="h-1 w-1 animate-breathe rounded-full bg-accent" />
+              dados simulados
+            </span>
+            {usingFallback && (
+              <span className="rounded-full border border-navy-600 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                fallback estático
+              </span>
+            )}
+          </div>
+
+          {!layersReady && (
+            <p className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
+              <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-accent" />
+              Carregando camadas geoespaciais…
+            </p>
+          )}
+        </div>
+
+        <MapAlertRail
+          alerts={alerts}
+          activeId={focusAlertId}
+          onSelect={(id) => setSearchParams({ alert: id })}
+        />
+
         <MapLegend />
+      </section>
+
+      {/* ── Metodologia (abaixo da dobra) ───────────────────────────────── */}
+
+      <div className="mx-auto w-full max-w-7xl p-6">
+        <div className="mb-6 border-b border-navy-700/70 pb-4">
+          <p className="data-label text-accent/80">Metodologia</p>
+          <h2 className="mt-1.5 text-xl font-bold text-white">Como ler este mapa</h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SectionCard title="O que é HAND">
+            <p className="text-sm leading-relaxed text-slate-400">
+              HAND (Height Above Nearest Drainage) mede a altura de um ponto em
+              relação à drenagem mais próxima — quanto menor, maior a
+              suscetibilidade a alagamento. É uma variável topográfica estática:
+              não incorpora chuva, vazão ou exposição por si só. As cores do mapa
+              usam a mesma escala de risco do resto da plataforma (verde =
+              seguro, vermelho = crítico) aplicada à suscetibilidade de cada
+              zona. Detalhes: <code className="text-slate-500">docs/metodologia-hand.md</code>.
+            </p>
+          </SectionCard>
+
+          <SectionCard title="Por que as zonas ultrapassam Blumenau">
+            <p className="text-sm leading-relaxed text-slate-400">
+              As zonas HAND podem ultrapassar o limite municipal porque representam
+              a <strong className="text-slate-200">área hidrologicamente contribuinte</strong> usada
+              no processamento, não apenas o polígono administrativo de Blumenau.
+              Água não respeita divisa de município: o HAND foi calculado sobre as
+              sub-bacias que drenam para a região, então parte das zonas coloridas
+              cai sobre municípios vizinhos. O contorno em{" "}
+              <span className="font-semibold text-accent">ciano</span> marca o limite
+              municipal — os dados não foram recortados por ele de propósito, para
+              não descartar a bacia que de fato influencia o território. Detalhes:{" "}
+              <code className="text-slate-500">docs/hand-processamento-detalhado.md</code>.
+            </p>
+          </SectionCard>
+
+          <SectionCard title="Marcadores simulados">
+            <p className="text-sm leading-relaxed text-slate-400">
+              Os alertas da trilha lateral são <strong className="text-slate-200">eventos
+              simulados</strong> de demonstração — mesma fonte de{" "}
+              <Link to="/alertas" className="text-accent underline underline-offset-2">
+                /alertas
+              </Link>
+              , sem persistência em banco, e não são alertas oficiais emitidos pela
+              Defesa Civil. Os losangos ciano são{" "}
+              <Link to="/abrigos" className="text-accent underline underline-offset-2">
+                abrigos simulados
+              </Link>
+              . O mapa apoia a decisão, não a substitui.
+            </p>
+          </SectionCard>
+        </div>
       </div>
-
-      <SectionCard title="Por que as zonas HAND ultrapassam o limite de Blumenau" className="mt-4">
-        <p className="text-sm text-slate-400">
-          As zonas HAND podem ultrapassar o limite municipal porque representam
-          a <strong className="text-slate-200">área hidrologicamente contribuinte</strong> usada
-          no processamento, não apenas o polígono administrativo de Blumenau.
-          Água não respeita divisa de município: o HAND foi calculado sobre as
-          sub-bacias que drenam para a região, então parte das zonas coloridas
-          cai sobre municípios vizinhos. O contorno em{" "}
-          <span className="text-accent font-semibold">ciano</span> marca o limite
-          municipal de Blumenau — os dados não foram recortados por ele de
-          propósito, para não descartar a bacia que de fato influencia o
-          território. Detalhes:{" "}
-          <code className="text-slate-500">docs/hand-processamento-detalhado.md</code>.
-        </p>
-      </SectionCard>
-
-      <SectionCard title="O que é HAND" className="mt-4">
-        <p className="text-sm text-slate-400">
-          HAND (Height Above Nearest Drainage) mede a altura de um ponto em
-          relação à drenagem mais próxima — quanto menor, maior a
-          suscetibilidade a alagamento. É uma variável topográfica estática:
-          não incorpora chuva, vazão ou exposição por si só. As cores acima
-          usam a mesma escala de risco do resto da plataforma (verde =
-          seguro, vermelho = crítico) aplicada à suscetibilidade de cada
-          zona. Detalhes: <code className="text-slate-500">docs/metodologia-hand.md</code>.
-        </p>
-      </SectionCard>
-
-      <SectionCard title="Abrigos simulados" className="mt-4">
-        <p className="text-sm text-slate-400">
-          Os marcadores <span className="inline-block h-2.5 w-2.5 bg-accent align-middle" style={{ transform: "rotate(45deg)" }} />{" "}
-          (losango ciano) no mapa são abrigos simulados — mesma fonte de{" "}
-          <Link to="/abrigos" className="text-accent underline underline-offset-2">
-            /abrigos
-          </Link>
-          , sem persistência em banco. Clique num marcador para ver ocupação
-          e status, ou acesse a lista completa com filtros na página de
-          Abrigos.
-        </p>
-      </SectionCard>
     </div>
   );
 }
