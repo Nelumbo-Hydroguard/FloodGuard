@@ -11,6 +11,10 @@ import { SectionCard } from "../components/SectionCard";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
+import { TelemetryStream } from "../components/TelemetryStream";
+import { DEMO_SENSORS } from "../data/demoOperations";
+import { formatRelative } from "../lib/operations";
+import { resolveTimestamp } from "../data/demoOperations";
 
 interface FormState {
   latitude: string;
@@ -82,7 +86,23 @@ function fieldLabelClass() {
   return "flex flex-col gap-1.5 text-xs font-medium text-slate-300";
 }
 
+/**
+ * Dois modos, um console.
+ *
+ * "Avaliar leitura" é a ferramenta que já existia: digita parâmetros, o
+ * motor responde. "Fluxo de sensores" é a visão de acompanhamento — a série
+ * demo chegando no tempo, avaliada pelo mesmo motor. Uma tela só com as duas
+ * coisas empilhadas ficaria longa e sem foco; abas mantêm cada gesto inteiro.
+ */
+type Mode = "avaliar" | "fluxo";
+
+const MODES: Array<{ key: Mode; label: string }> = [
+  { key: "avaliar", label: "Avaliar leitura" },
+  { key: "fluxo", label: "Fluxo de sensores" },
+];
+
 export function Telemetria() {
+  const [mode, setMode] = useState<Mode>("avaliar");
   const [form, setForm] = useState<FormState>(QUICK_EXAMPLES.alerta);
   const [result, setResult] = useState<RiskEvaluationResponse | null>(null);
   const [meshPayload, setMeshPayload] = useState<MeshPayload | null>(null);
@@ -165,13 +185,82 @@ export function Telemetria() {
       <PageHeader
         eyebrow="Console do motor de risco"
         title="Telemetria"
-        description="Informe a leitura e avalie o risco. Valores simulados."
+        description="Acompanhe as leituras dos sensores ou avalie uma leitura manual. Valores simulados."
       />
+
+      <div className="mb-5 flex flex-wrap items-center gap-2 border-b border-navy-700/70 pb-3">
+        {MODES.map((option) => {
+          const active = mode === option.key;
+          return (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setMode(option.key)}
+              aria-current={active ? "true" : undefined}
+              className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+                active ? "text-white" : "text-slate-400 hover:text-slate-100"
+              }`}
+            >
+              {option.label}
+              <span
+                className={`absolute inset-x-2 -bottom-[13px] h-0.5 rounded-full transition-all ${
+                  active ? "bg-accent shadow-[0_0_12px_var(--glow-accent)]" : "bg-transparent"
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {mode === "fluxo" && (
+        <div className="flex flex-col gap-4">
+          <TelemetryStream />
+
+          <SectionCard title="Sensores" subtitle="Rede simulada de monitoramento.">
+            <div className="flex flex-col">
+              {DEMO_SENSORS.map((sensor) => (
+                <div
+                  key={sensor.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-navy-800/70 py-3 last:border-b-0"
+                >
+                  <span className="font-mono text-xs text-slate-300">{sensor.id}</span>
+                  <span className="text-sm text-slate-200">{sensor.label}</span>
+                  <span className="text-xs text-slate-500">{sensor.region}</span>
+                  <span className="font-mono text-xs text-slate-400">
+                    {sensor.waterLevelM.toFixed(2)} m · {sensor.rainfallMm} mm
+                  </span>
+                  <span className="text-[11px] text-slate-600">
+                    {formatRelative(resolveTimestamp(sensor.lastReadingMinutesAgo))}
+                  </span>
+                  <span
+                    className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                      sensor.status === "online"
+                        ? "border-risk-safe/40 bg-risk-safe/10 text-risk-safe"
+                        : "border-slate-500/40 bg-slate-500/10 text-slate-400"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        sensor.status === "online" ? "animate-breathe bg-risk-safe" : "bg-slate-500"
+                      }`}
+                    />
+                    {sensor.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+      )}
 
       {/* Entrada à esquerda, saída à direita e fixa: é o gesto de uma
           ferramenta operacional — mexe no parâmetro, vê o motor responder,
-          sem perder o resultado de vista ao rolar o formulário. */}
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+          sem perder o resultado de vista ao rolar o formulário.
+
+          `hidden` em vez de desmontar: trocar para o fluxo de sensores e
+          voltar não pode apagar o resultado que o operador acabou de
+          calcular. */}
+      <div className={`grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px] ${mode === "avaliar" ? "" : "hidden"}`}>
         <div className="flex flex-col gap-4">
       <SectionCard
         title="Presets"

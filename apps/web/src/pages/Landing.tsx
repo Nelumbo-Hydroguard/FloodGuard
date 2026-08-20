@@ -67,6 +67,16 @@ export function Landing() {
           </Link>
         </nav>
 
+        {/* Caminho do cidadão fora dos CTAs principais: a landing vende o
+            produto para quem opera, mas quem precisa de ajuda não pode ter
+            que caminhar pelo painel para achar o pedido de socorro. */}
+        <p className="-mt-4 text-center text-xs text-slate-500">
+          Precisa de ajuda agora?{" "}
+          <Link to="/sos" className="font-semibold text-accent underline-offset-2 hover:underline">
+            Enviar pedido de SOS
+          </Link>
+        </p>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {PILLARS.map((pillar) => (
             <div key={pillar.title} className="panel p-4">

@@ -6,7 +6,10 @@ import { RiskMap } from "./pages/RiskMap";
 import { Alertas } from "./pages/Alertas";
 import { AlertDetail } from "./pages/AlertDetail";
 import { Telemetria } from "./pages/Telemetria";
+import { SOS } from "./pages/SOS";
+import { Operacao } from "./pages/Operacao";
 import { Shelters } from "./pages/Shelters";
+import { Acesso } from "./pages/Acesso";
 import { Sobre } from "./pages/Sobre";
 import { NotFound } from "./pages/NotFound";
 
@@ -20,7 +23,12 @@ export function AppRouter() {
         <Route path="/alertas" element={<Alertas />} />
         <Route path="/alertas/:id" element={<AlertDetail />} />
         <Route path="/telemetria" element={<Telemetria />} />
+        {/* Envio (cidadão) e gestão (operação) são telas separadas de
+            propósito — públicos diferentes, gestos diferentes (F11). */}
+        <Route path="/sos" element={<SOS />} />
+        <Route path="/operacao" element={<Operacao />} />
         <Route path="/abrigos" element={<Shelters />} />
+        <Route path="/acesso" element={<Acesso />} />
         <Route path="/sobre" element={<Sobre />} />
         {/* Catch-all dentro do Layout — mantém nav e dá saída ao usuário
             em vez de renderizar tela vazia (F6.2.1). */}

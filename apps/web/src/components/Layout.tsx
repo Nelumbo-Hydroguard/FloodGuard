@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { BrandMark } from "./BrandMark";
+import { useOperations } from "../state/OperationsProvider";
 
 /**
  * A navegação principal carrega SÓ operação. "Sobre / Saiba mais" é
@@ -11,7 +12,9 @@ const NAV_ITEMS = [
   { to: "/mapa", label: "Mapa" },
   { to: "/alertas", label: "Alertas" },
   { to: "/telemetria", label: "Telemetria" },
+  { to: "/sos", label: "SOS" },
   { to: "/abrigos", label: "Abrigos" },
+  { to: "/operacao", label: "Operação" },
 ];
 
 /**
@@ -24,8 +27,13 @@ const FULL_BLEED_ROUTES = new Set(["/mapa"]);
 
 export function Layout() {
   const location = useLocation();
+  const { sosRequests } = useOperations();
   const fullBleed = FULL_BLEED_ROUTES.has(location.pathname);
   const aboutActive = location.pathname.startsWith("/sobre");
+
+  // Contador na nav só para pedido SEM atendimento: é a única pendência que
+  // exige alguém agir agora. "Em atendimento" já tem dono.
+  const waitingSos = sosRequests.filter((request) => request.status === "aguardando").length;
 
   return (
     <div className="min-h-screen bg-navy-950 text-slate-100">
@@ -60,6 +68,11 @@ export function Layout() {
                   }`}
                 >
                   {item.label}
+                  {item.to === "/operacao" && waitingSos > 0 && (
+                    <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-risk-critical px-1 font-mono text-[10px] font-bold text-white">
+                      {waitingSos}
+                    </span>
+                  )}
                   {/* Indicador na base do header, não pílula de fundo: lê
                       como aba de console e não desloca o texto. */}
                   <span
@@ -76,6 +89,13 @@ export function Layout() {
             <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-accent shadow-[0_0_8px_var(--glow-accent)]" />
             Modo demo — dados simulados
           </span>
+
+          <Link
+            to="/acesso"
+            className="hidden shrink-0 whitespace-nowrap text-[12px] text-slate-500 transition-colors hover:text-slate-300 xl:inline"
+          >
+            Acesso
+          </Link>
 
           <Link
             to="/sobre"

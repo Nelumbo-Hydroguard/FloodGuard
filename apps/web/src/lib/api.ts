@@ -99,6 +99,22 @@ export async function evaluateRisk(request: RiskEvaluationRequest) {
   return postJSON<RiskEvaluationResponse>("/api/risk/evaluate", request);
 }
 
+export interface RiskBatchResponse {
+  results: RiskEvaluationResponse[];
+}
+
+/**
+ * Avalia várias leituras numa requisição só (F11).
+ *
+ * Usado pelo fluxo contínuo de sensores em /telemetria: a série demo
+ * inteira é avaliada pelo MOTOR REAL de uma vez e depois revelada passo a
+ * passo na tela. Uma chamada por tick faria a demo depender da rede a cada
+ * 2,5 s e encheria a aba de rede sem necessidade.
+ */
+export async function evaluateRiskBatch(readings: RiskEvaluationRequest[]) {
+  return postJSON<RiskBatchResponse>("/api/risk/evaluate-batch", { readings });
+}
+
 export interface ScenariosDemoResponse {
   source: string;
   scenarios: Record<"seguro" | "alerta" | "critico", RiskEvaluationResponse>;

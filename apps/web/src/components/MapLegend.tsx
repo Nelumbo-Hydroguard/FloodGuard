@@ -57,6 +57,16 @@ export function MapLegend() {
             <span className="h-2 w-2 shrink-0 rotate-45 bg-accent" />
             Abrigos
           </span>
+          {/* Cada camada tem forma própria — com quatro ligadas ao mesmo
+              tempo, cor sozinha não separa nada (F11). */}
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="h-2 w-2 shrink-0 bg-[#a78bfa]" />
+            Sensores
+          </span>
+          <span className="flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#f472b6]" />
+            Pedidos SOS
+          </span>
         </LegendGroup>
 
         <LegendGroup title="Alertas">
