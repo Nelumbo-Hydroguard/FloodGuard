@@ -25,7 +25,7 @@ export function MapAlertRail({
   return (
     <aside className="panel-glass absolute right-6 top-6 z-[1000] flex max-h-[calc(100%-3rem)] w-[288px] animate-rise-in flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-2 border-b border-navy-700/70 px-4 py-3">
-        <p className="data-label">Alertas simulados</p>
+        <p className="data-label">Alertas</p>
         <span className="rounded-full border border-navy-600 px-2 py-0.5 font-mono text-[10px] text-slate-400">
           {alerts.length}
         </span>

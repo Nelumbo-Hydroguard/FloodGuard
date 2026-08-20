@@ -1,111 +1,87 @@
 import { Link } from "react-router-dom";
+import { BrandMark } from "../components/BrandMark";
 
 /**
- * Página de entrada (`/`) — fora do Layout, sem a nav do sistema.
+ * Página de entrada (`/`) — fora do Layout, sem a nav do sistema, por isso
+ * precisa dos próprios CTAs (achado bloqueador da F6.2: a raiz do produto
+ * não tinha caminho para dentro do sistema).
  *
- * Por isso ela precisa dos próprios CTAs: até a F6.2 esta página não tinha
- * nenhum link, e quem abrisse a raiz do produto ficava sem caminho para
- * entrar no sistema (achado bloqueador da auditoria — ver
- * docs/auditoria-demo-f6-2.md).
+ * Vende o produto em poucos segundos: headline, dois CTAs e três blocos
+ * curtos. Metodologia, limitações e origem dos dados vivem em /sobre — esta
+ * página não é documentação (F11).
  */
 
-const ENTRY_POINTS = [
+const PILLARS = [
   {
-    to: "/painel",
-    label: "Abrir painel operacional",
-    description: "Visão da Defesa Civil: risco por cenário, fatores e ação recomendada.",
-    primary: true,
+    title: "Inteligência",
+    description: "Risco calculado com terreno, chuva, nível e tendência — com o porquê junto.",
   },
   {
-    to: "/mapa",
-    label: "Ver mapa de risco",
-    description: "Zonas HAND reais de Blumenau sobre base cartográfica.",
-    primary: false,
+    title: "Resiliência",
+    description: "Alertas, abrigos e capacidade de acolhimento numa só operação.",
   },
   {
-    to: "/telemetria",
-    label: "Testar o motor de risco",
-    description: "Formulário de leitura simulada — avalia risco na hora.",
-    primary: false,
-  },
-  {
-    to: "/sobre",
-    label: "Entender o projeto",
-    description: "O que é real, o que é simulado e o que é roadmap.",
-    primary: false,
+    title: "Comunicação",
+    description: "Ação recomendada pronta para acionar equipe de campo.",
   },
 ];
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-4xl flex flex-col gap-8">
-        <header className="text-center flex flex-col items-center gap-4">
-          <span className="inline-flex items-center gap-2 rounded border border-accent-muted/40 bg-accent/5 px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-accent">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-            Prova de conceito — dados simulados
+    <div className="flex min-h-screen flex-col items-center justify-center bg-navy-950 px-6 py-12 text-slate-100">
+      <div className="flex w-full max-w-4xl flex-col gap-10">
+        <header className="flex flex-col items-center gap-5 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+            <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-accent" />
+            Modo demo — dados simulados
           </span>
 
-          <h1 className="text-5xl font-bold tracking-tight">FloodGuard</h1>
+          <div className="flex items-center gap-3">
+            <BrandMark className="h-9 w-9 text-accent" />
+            <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+              <span className="font-medium text-slate-400">Nelumbo</span> FloodGuard
+            </h1>
+          </div>
 
-          <p className="text-lg text-slate-300 max-w-2xl">
-            Plataforma <strong className="text-slate-100">GovTech B2G</strong> de apoio à
-            tomada de decisão da <strong className="text-slate-100">Defesa Civil municipal</strong> em
-            eventos de alagamento e inundação, com piloto em Blumenau/SC.
+          <p className="max-w-2xl text-lg leading-snug text-slate-200">
+            Inteligência e comunicação para decisões em eventos hidrológicos.
+          </p>
+          <p className="max-w-xl text-sm text-slate-400">
+            Monitore riscos, visualize alertas e concentre informações críticas em uma
+            única operação.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="panel p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Diferencial</p>
-            <p className="text-sm text-slate-300 mt-1">
-              Camada <strong className="text-slate-100">HAND</strong> real de Blumenau — suscetibilidade
-              topográfica cruzada com chuva e nível d'água.
-            </p>
-          </div>
-          <div className="panel p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Usuário</p>
-            <p className="text-sm text-slate-300 mt-1">
-              Operador da <strong className="text-slate-100">Defesa Civil</strong> — não é app de
-              cidadão, é ferramenta de sala de operação.
-            </p>
-          </div>
-          <div className="panel p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Motor de risco</p>
-            <p className="text-sm text-slate-300 mt-1">
-              Fórmula <strong className="text-slate-100">explicável e auditável</strong> — toda avaliação
-              vem com justificativa textual.
-            </p>
-          </div>
-        </div>
-
-        <nav className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {ENTRY_POINTS.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`group rounded-xl border p-4 shadow-panel transition-colors ${
-                item.primary
-                  ? "border-accent/60 bg-accent/10 hover:bg-accent/20"
-                  : "panel panel-interactive"
-              }`}
-            >
-              <span
-                className={`block font-semibold ${item.primary ? "text-accent" : "text-slate-100 group-hover:text-accent"}`}
-              >
-                {item.label} →
-              </span>
-              <span className="block text-sm text-slate-400 mt-1">{item.description}</span>
-            </Link>
-          ))}
+        <nav className="flex flex-col justify-center gap-3 sm:flex-row">
+          <Link
+            to="/painel"
+            className="rounded-lg bg-accent px-6 py-3 text-center text-sm font-semibold text-navy-950 shadow-[0_0_24px_var(--glow-accent)] transition-colors hover:bg-accent/90"
+          >
+            Abrir painel
+          </Link>
+          <Link
+            to="/mapa"
+            className="rounded-lg border border-navy-600 px-6 py-3 text-center text-sm font-semibold text-slate-200 transition-colors hover:border-accent hover:text-accent"
+          >
+            Ver mapa
+          </Link>
         </nav>
 
-        <footer className="border-t border-navy-700 pt-4 text-center">
-          <p className="text-sm text-slate-500 max-w-2xl mx-auto">
-            Prova de conceito <strong className="text-slate-400">software-only</strong> e{" "}
-            <strong className="text-slate-400">hardware-agnóstica</strong>. Toda telemetria é
-            simulada — não há sensores físicos, LoRaWAN, Meshtastic ou MQTT reais em operação.
-            <strong className="text-slate-400"> Não substitui a Defesa Civil.</strong>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {PILLARS.map((pillar) => (
+            <div key={pillar.title} className="panel p-4">
+              <p className="data-label text-accent/80">{pillar.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{pillar.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <footer className="border-t border-navy-700/70 pt-5 text-center">
+          <p className="text-xs text-slate-500">
+            Prova de conceito com dados simulados. Não substitui a Defesa Civil.{" "}
+            <Link to="/sobre" className="text-accent underline-offset-2 hover:underline">
+              Saiba mais
+            </Link>
           </p>
         </footer>
       </div>

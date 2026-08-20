@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import { GeoJSON, MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
@@ -17,7 +17,6 @@ import {
 } from "../lib/api";
 import { RISK_THEME, type RiskTheme } from "../lib/riskTheme";
 import { PageHeader } from "../components/PageHeader";
-import { SectionCard } from "../components/SectionCard";
 import { MapLegend } from "../components/MapLegend";
 import { MapAlertRail } from "../components/MapAlertRail";
 import { ErrorState } from "../components/ErrorState";
@@ -178,7 +177,7 @@ export function RiskMap() {
   if (geoError) {
     return (
       <div className="mx-auto w-full max-w-7xl p-6">
-        <PageHeader title="Mapa de risco" description="Blumenau/SC — camadas HAND e cenários simulados." />
+        <PageHeader eyebrow="Blumenau/SC" title="Mapa de risco" />
         <ErrorState message={geoError} />
       </div>
     );
@@ -188,11 +187,11 @@ export function RiskMap() {
   const layersReady = Boolean(boundary || handZones);
 
   return (
-    <div>
-      {/* O mapa ocupa a viewport abaixo do header (h-14 = 3.5rem em
-          Layout.tsx). É a peça central da demonstração: enquadrado numa
-          caixa de 560px no meio da coluna de texto, lia como figura de
-          relatório. Os blocos de metodologia continuam logo abaixo. */}
+    <>
+      {/* O mapa ocupa a viewport inteira abaixo do header (h-14 = 3.5rem em
+          Layout.tsx). É a tela de operação: só situação, alertas, legenda,
+          controles e ações. Metodologia (HAND, recorte das bacias, origem
+          dos marcadores) vive em /sobre — F11. */}
       <section className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
         <MapContainer
           center={BLUMENAU_CENTER}
@@ -238,7 +237,7 @@ export function RiskMap() {
                   `<strong>${p.class_label ?? "Zona HAND"}</strong><br/>` +
                     `Suscetibilidade: ${p.susceptibility ?? "—"}<br/>` +
                     `${p.percent_area != null ? `${p.percent_area}% da área do município<br/>` : ""}` +
-                    `<em>Peso no motor de risco: ${p.risk_weight ?? "—"}</em>`,
+                    `<em>Peso no motor: ${p.risk_weight ?? "—"}</em>`,
                 );
               }}
             />
@@ -309,7 +308,7 @@ export function RiskMap() {
             Mapa de risco
           </h1>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-            Limite municipal, zonas de suscetibilidade HAND e eventos simulados.
+            Suscetibilidade do terreno, alertas e abrigos.
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-700/70 pt-3">
@@ -327,7 +326,7 @@ export function RiskMap() {
           {!layersReady && (
             <p className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
               <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-accent" />
-              Carregando camadas geoespaciais…
+              Carregando camadas…
             </p>
           )}
         </div>
@@ -340,60 +339,6 @@ export function RiskMap() {
 
         <MapLegend />
       </section>
-
-      {/* ── Metodologia (abaixo da dobra) ───────────────────────────────── */}
-
-      <div className="mx-auto w-full max-w-7xl p-6">
-        <div className="mb-6 border-b border-navy-700/70 pb-4">
-          <p className="data-label text-accent/80">Metodologia</p>
-          <h2 className="mt-1.5 text-xl font-bold text-white">Como ler este mapa</h2>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <SectionCard title="O que é HAND">
-            <p className="text-sm leading-relaxed text-slate-400">
-              HAND (Height Above Nearest Drainage) mede a altura de um ponto em
-              relação à drenagem mais próxima — quanto menor, maior a
-              suscetibilidade a alagamento. É uma variável topográfica estática:
-              não incorpora chuva, vazão ou exposição por si só. As cores do mapa
-              usam a mesma escala de risco do resto da plataforma (verde =
-              seguro, vermelho = crítico) aplicada à suscetibilidade de cada
-              zona. Detalhes: <code className="text-slate-500">docs/metodologia-hand.md</code>.
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Por que as zonas ultrapassam Blumenau">
-            <p className="text-sm leading-relaxed text-slate-400">
-              As zonas HAND podem ultrapassar o limite municipal porque representam
-              a <strong className="text-slate-200">área hidrologicamente contribuinte</strong> usada
-              no processamento, não apenas o polígono administrativo de Blumenau.
-              Água não respeita divisa de município: o HAND foi calculado sobre as
-              sub-bacias que drenam para a região, então parte das zonas coloridas
-              cai sobre municípios vizinhos. O contorno em{" "}
-              <span className="font-semibold text-accent">ciano</span> marca o limite
-              municipal — os dados não foram recortados por ele de propósito, para
-              não descartar a bacia que de fato influencia o território. Detalhes:{" "}
-              <code className="text-slate-500">docs/hand-processamento-detalhado.md</code>.
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Marcadores simulados">
-            <p className="text-sm leading-relaxed text-slate-400">
-              Os alertas da trilha lateral são <strong className="text-slate-200">eventos
-              simulados</strong> de demonstração — mesma fonte de{" "}
-              <Link to="/alertas" className="text-accent underline underline-offset-2">
-                /alertas
-              </Link>
-              , sem persistência em banco, e não são alertas oficiais emitidos pela
-              Defesa Civil. Os losangos ciano são{" "}
-              <Link to="/abrigos" className="text-accent underline underline-offset-2">
-                abrigos simulados
-              </Link>
-              . O mapa apoia a decisão, não a substitui.
-            </p>
-          </SectionCard>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
