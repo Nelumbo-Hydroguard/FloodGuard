@@ -1,97 +1,279 @@
+import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { DemoNotice } from "../components/DemoNotice";
 
+/**
+ * `/sobre` — a única tela de documentação do produto.
+ *
+ * A F11 (product UX cleanup) tirou metodologia, conceitos e limitações das
+ * telas operacionais (/painel, /mapa, /alertas, /telemetria, /abrigos) e
+ * centralizou tudo aqui. Nada foi apagado: o texto que estava embaixo do
+ * mapa ("o que é HAND", "por que as zonas ultrapassam Blumenau"), o roadmap
+ * de abrigos e os avisos longos de dados simulados foram reaproveitados nas
+ * seções abaixo. Se um conteúdo educacional voltar a aparecer numa tela de
+ * operação, o lugar dele é aqui.
+ */
+
+const SECTIONS = [
+  { id: "o-que-e", label: "O que é" },
+  { id: "como-funciona", label: "Como funciona" },
+  { id: "hand", label: "HAND" },
+  { id: "dados", label: "Dados utilizados" },
+  { id: "motor", label: "Motor de risco" },
+  { id: "telemetria", label: "Telemetria" },
+  { id: "mapa", label: "Mapa e contexto geoespacial" },
+  { id: "alertas", label: "Alertas" },
+  { id: "simulado", label: "Dados simulados" },
+  { id: "limitacoes", label: "Limitações atuais" },
+  { id: "arquitetura", label: "Arquitetura" },
+  { id: "proximos-passos", label: "Próximos passos" },
+];
+
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-20">
+      <SectionCard title={title}>{children}</SectionCard>
+    </section>
+  );
+}
+
+const P = "text-sm leading-relaxed text-slate-400";
+const LIST = "mt-2 list-inside list-disc space-y-1.5 text-sm text-slate-400";
+const STRONG = "text-slate-200";
+
 export function Sobre() {
   return (
-    <div className="max-w-3xl flex flex-col gap-6">
-      <PageHeader title="Sobre o FloodGuard" description="O que é, quem usa, o que já funciona e o que ainda é roadmap." />
+    <div className="flex max-w-3xl flex-col gap-6">
+      <PageHeader
+        eyebrow="Documentação"
+        title="Saiba mais"
+        description="Nelumbo FloodGuard: resiliência, comunicação e inteligência para o apoio à decisão em inundações e eventos hidrológicos."
+      />
 
-      <SectionCard title="O que é">
-        <p className="text-sm text-slate-400">
-          <strong className="text-slate-200">FloodGuard é uma plataforma GovTech B2G</strong> —
-          entregue a órgãos públicos, não diretamente ao cidadão. O usuário
-          principal é a <strong className="text-slate-200">Defesa Civil municipal</strong>, que usa
-          o painel para apoiar decisões em eventos de alagamento e
-          inundação.
-        </p>
-      </SectionCard>
+      <nav className="panel flex flex-wrap gap-x-4 gap-y-2 p-4">
+        {SECTIONS.map((section) => (
+          <a
+            key={section.id}
+            href={`#${section.id}`}
+            className="text-xs text-slate-400 underline-offset-2 transition-colors hover:text-accent hover:underline"
+          >
+            {section.label}
+          </a>
+        ))}
+      </nav>
 
-      <SectionCard title="Problema que resolve">
-        <p className="text-sm text-slate-400">
-          Dados relevantes para decisão em enchente hoje ficam fragmentados —
-          suscetibilidade do terreno num lugar, chuva noutro, nível de rio
-          noutro. FloodGuard cruza esses fatores numa única avaliação
-          explicável, em vez de exigir que o operador cruze mentalmente
-          fontes separadas.
-        </p>
-      </SectionCard>
+      <div className="flex flex-col gap-6">
+        <Section id="o-que-e" title="1. O que é o FloodGuard">
+          <p className={P}>
+            <strong className={STRONG}>Plataforma GovTech B2G</strong> de apoio à decisão —
+            entregue a órgãos públicos, não diretamente ao cidadão. O usuário principal é o
+            operador da <strong className={STRONG}>Defesa Civil municipal</strong>, em sala de
+            operação durante um evento de alagamento ou inundação.
+          </p>
+          <p className={`${P} mt-3`}>
+            Os dados que importam numa enchente hoje ficam fragmentados: suscetibilidade do
+            terreno num lugar, chuva noutro, nível de rio noutro. O FloodGuard cruza esses
+            fatores numa única avaliação explicável, em vez de exigir que o operador cruze
+            mentalmente fontes separadas.
+          </p>
+          <p className={`${P} mt-3`}>
+            O piloto é <strong className={STRONG}>Blumenau/SC</strong> — município com histórico
+            relevante de inundação e onde o pipeline geoespacial já foi processado sobre dados
+            reais da região.
+          </p>
+        </Section>
 
-      <SectionCard title="Por que Blumenau/SC">
-        <p className="text-sm text-slate-400">
-          Piloto com foco em <strong className="text-slate-200">Blumenau/SC</strong>, município com
-          histórico relevante de eventos de inundação e onde o pipeline
-          geoespacial (HAND) já foi processado sobre dados reais da região.
-        </p>
-      </SectionCard>
+        <Section id="como-funciona" title="2. Como funciona">
+          <ol className="mt-2 list-inside list-decimal space-y-1.5 text-sm text-slate-400">
+            <li>Uma leitura chega com posição, chuva acumulada, nível d'água e nível anterior.</li>
+            <li>O motor busca o contexto espacial (classe HAND) do ponto.</li>
+            <li>Os quatro fatores são normalizados e combinados num score de 0 a 100%.</li>
+            <li>O score cai numa faixa e vira nível: seguro, atenção, alerta ou crítico.</li>
+            <li>O motor devolve score, confiança, fatores, justificativa e ação recomendada.</li>
+            <li>
+              O resultado alimenta o{" "}
+              <Link to="/painel" className="text-accent underline-offset-2 hover:underline">painel</Link>,
+              os{" "}
+              <Link to="/alertas" className="text-accent underline-offset-2 hover:underline">alertas</Link>{" "}
+              e o{" "}
+              <Link to="/mapa" className="text-accent underline-offset-2 hover:underline">mapa</Link>.
+            </li>
+          </ol>
+        </Section>
 
-      <SectionCard title="Por que HAND">
-        <p className="text-sm text-slate-400">
-          <strong className="text-slate-200">HAND</strong> (Height Above Nearest Drainage) é uma
-          camada de <strong className="text-slate-200">suscetibilidade</strong> topográfica — mede a
-          altura de um ponto em relação à drenagem mais próxima. Não é uma
-          previsão de inundação por si só; entra como um dos fatores do motor
-          de risco. Detalhes técnicos em{" "}
-          <code className="text-slate-500">docs/metodologia-hand.md</code>.
-        </p>
-      </SectionCard>
+        <Section id="hand" title="3. HAND">
+          <p className={P}>
+            <strong className={STRONG}>HAND (Height Above Nearest Drainage)</strong> mede a altura
+            de um ponto em relação à drenagem mais próxima — quanto menor, maior a suscetibilidade
+            a alagamento. É uma variável topográfica <strong className={STRONG}>estática</strong>:
+            não incorpora chuva, vazão ou exposição por si só, e não é previsão de inundação. Entra
+            como um dos quatro fatores do motor de risco.
+          </p>
+          <p className={`${P} mt-3`}>
+            As zonas HAND do mapa ultrapassam o limite de Blumenau de propósito. Elas representam a{" "}
+            <strong className={STRONG}>área hidrologicamente contribuinte</strong> usada no
+            processamento, não o polígono administrativo: água não respeita divisa de município, e o
+            HAND foi calculado sobre as sub-bacias que drenam para a região. Recortar pelo limite
+            descartaria a bacia que de fato influencia o território. O contorno em{" "}
+            <span className="font-semibold text-accent">ciano</span> marca o limite municipal.
+          </p>
+          <p className={`${P} mt-3`}>
+            Detalhes: <code className="text-slate-500">docs/metodologia-hand.md</code> e{" "}
+            <code className="text-slate-500">docs/hand-processamento-detalhado.md</code>.
+          </p>
+        </Section>
 
-      <SectionCard title="Motor de risco">
-        <p className="text-sm text-slate-400">
-          O <strong className="text-slate-200">motor de risco é uma Prova de Conceito explicável</strong>
-          : combina HAND, chuva acumulada, nível d'água e tendência numa
-          fórmula transparente e auditável — pesos e referências de
-          normalização são valores demonstrativos, não calibrados com dados
-          reais de campo. Toda avaliação vem com justificativa textual e ação
-          recomendada. Detalhes em{" "}
-          <code className="text-slate-500">docs/motor-de-risco.md</code>.
-        </p>
-      </SectionCard>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SectionCard title="Implementado">
-          <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
-            <li>Motor de risco (fórmula + fatores + explicação)</li>
-            <li>48 testes automatizados no backend, sem depender de banco</li>
-            <li>API FastAPI com Swagger em <code className="text-slate-500">/docs</code></li>
-            <li>Dashboard: painel, mapa, alertas, telemetria</li>
-            <li>Dados HAND reais de Blumenau (limite, bacias, zonas)</li>
+        <Section id="dados" title="4. Dados utilizados">
+          <ul className={LIST}>
+            <li>
+              <strong className={STRONG}>Reais:</strong> camadas HAND de Blumenau — limite
+              municipal, bacias e zonas de suscetibilidade classificadas.
+            </li>
+            <li>
+              <strong className={STRONG}>Simulados:</strong> toda leitura de sensor (chuva, nível
+              d'água), os três cenários de referência, os alertas e os abrigos.
+            </li>
+            <li>
+              As camadas geoespaciais vêm do PostGIS quando disponível e caem para arquivos GeoJSON
+              estáticos quando não — o mapa continua funcionando nos dois casos.
+            </li>
           </ul>
-        </SectionCard>
-        <SectionCard title="Simulado">
-          <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
-            <li>Toda leitura de sensor (chuva, nível d'água)</li>
-            <li>Payload UniMesh/LoRa (<code className="text-slate-500">implemented: false</code>)</li>
-            <li>Os 3 cenários de demonstração</li>
-            <li>Alertas exibidos no painel</li>
+        </Section>
+
+        <Section id="motor" title="5. Motor de risco">
+          <p className={P}>
+            O motor combina <strong className={STRONG}>HAND, chuva acumulada, nível d'água e
+            tendência</strong> numa fórmula transparente e auditável. Toda avaliação vem com
+            decomposição por fator, justificativa textual e ação recomendada — o operador vê de
+            onde o score veio, não só o número.
+          </p>
+          <p className={`${P} mt-3`}>
+            Os limiares de faixa (0.25 / 0.50 / 0.75) e os pesos de normalização são{" "}
+            <strong className={STRONG}>valores demonstrativos</strong>, não calibrados com dados
+            reais de campo. A confiança cai quando falta contexto espacial ou quando a comunicação
+            está degradada. Detalhes: <code className="text-slate-500">docs/motor-de-risco.md</code>.
+          </p>
+        </Section>
+
+        <Section id="telemetria" title="6. Telemetria">
+          <p className={P}>
+            A tela de{" "}
+            <Link to="/telemetria" className="text-accent underline-offset-2 hover:underline">
+              Telemetria
+            </Link>{" "}
+            é o console do motor: os valores são digitados manualmente ou carregados de um preset,
+            nunca vêm de sensor de campo. Serve para testar o comportamento do motor com qualquer
+            combinação de parâmetros.
+          </p>
+          <p className={`${P} mt-3`}>
+            O botão "Gerar payload UniMesh/LoRa" mostra como uma mensagem compacta seria transmitida
+            por rede mesh de baixa largura de banda. O payload é montado de verdade, mas vem marcado
+            com <code className="text-slate-500">implemented: false</code>: não há transmissão real —
+            a PoC é <strong className={STRONG}>software-only e hardware-agnóstica</strong>. Detalhes:{" "}
+            <code className="text-slate-500">docs/telemetria-detalhada.md</code>.
+          </p>
+        </Section>
+
+        <Section id="mapa" title="7. Mapa e contexto geoespacial">
+          <p className={P}>
+            O{" "}
+            <Link to="/mapa" className="text-accent underline-offset-2 hover:underline">mapa</Link>{" "}
+            sobrepõe três camadas à base cartográfica: as zonas de suscetibilidade HAND, o limite
+            municipal em ciano e os marcadores de eventos e abrigos.
+          </p>
+          <p className={`${P} mt-3`}>
+            As cores das zonas usam a mesma escala do resto da plataforma (verde a vermelho)
+            aplicada à suscetibilidade — por isso a legenda fala em "muito baixa" a "alta", e não em
+            "seguro" a "crítico": chamar uma zona HAND de crítica sugeriria risco em tempo real, que
+            é outra coisa. Os losangos ciano são{" "}
+            <Link to="/abrigos" className="text-accent underline-offset-2 hover:underline">abrigos</Link>;
+            os círculos são eventos, com anel pulsante nos críticos.
+          </p>
+        </Section>
+
+        <Section id="alertas" title="8. Alertas">
+          <p className={P}>
+            Os{" "}
+            <Link to="/alertas" className="text-accent underline-offset-2 hover:underline">alertas</Link>{" "}
+            são derivados do motor de risco sobre cenários fixos e não têm persistência em banco. São
+            eventos de demonstração — <strong className={STRONG}>não são alertas oficiais emitidos
+            pela Defesa Civil</strong>. Cada um traz gravidade, score, confiança, justificativa e
+            ação recomendada, e liga direto para o ponto correspondente no mapa.
+          </p>
+        </Section>
+
+        <Section id="simulado" title="9. Dados simulados">
+          <p className={P}>
+            Toda a operação da plataforma roda sobre dados simulados
+            (<code className="text-slate-500">source: "simulation"</code>). Não há sensores físicos,
+            LoRaWAN, Meshtastic ou MQTT reais em operação, e nada é persistido em banco entre
+            sessões. O que é real: as camadas HAND de Blumenau e o próprio motor de risco, que
+            calcula de verdade a partir do que recebe.
+          </p>
+          <p className={`${P} mt-3`}>
+            Nenhuma tela desta plataforma afirma o contrário — o selo{" "}
+            <strong className={STRONG}>"Modo demo — dados simulados"</strong> fica visível no
+            cabeçalho em todas as rotas.
+          </p>
+        </Section>
+
+        <Section id="limitacoes" title="10. Limitações atuais">
+          <ul className={LIST}>
+            <li>Pesos e referências de normalização do motor não são calibrados com dados de campo.</li>
+            <li>HAND é suscetibilidade estática: não reage a chuva em tempo real.</li>
+            <li>Sem autenticação, sem perfis de usuário e sem trilha de auditoria.</li>
+            <li>Alertas e abrigos vivem em memória no backend, sem persistência.</li>
+            <li>Sem previsão (nowcasting): o motor avalia o presente, não projeta o futuro.</li>
+            <li>Cobertura territorial limitada a Blumenau/SC.</li>
+            <li>
+              O FloodGuard <strong className={STRONG}>apoia</strong> a decisão da Defesa Civil — não
+              a substitui. Detalhes: <code className="text-slate-500">docs/limitacoes.md</code>.
+            </li>
           </ul>
-        </SectionCard>
-        <SectionCard title="Roadmap">
-          <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
-            <li>Nowcasting com <strong className="text-slate-200">U-RNN</strong> (previsão de chuva)</li>
-            <li>Hardware/LoRaWAN/Meshtastic reais</li>
-            <li>Autenticação e persistência de alertas</li>
-            <li>App completo do cidadão</li>
+        </Section>
+
+        <Section id="arquitetura" title="11. Arquitetura e tecnologia">
+          <ul className={LIST}>
+            <li>
+              <strong className={STRONG}>API:</strong> FastAPI (Python), com Swagger em{" "}
+              <code className="text-slate-500">/docs</code>.
+            </li>
+            <li>
+              <strong className={STRONG}>Motor de risco:</strong> módulo isolado, sem dependência de
+              banco — normalização, regras, explicação e contexto espacial separados.
+            </li>
+            <li>
+              <strong className={STRONG}>Geoespacial:</strong> PostGIS para as camadas, com fallback
+              para GeoJSON estático gerado do pipeline HAND.
+            </li>
+            <li>
+              <strong className={STRONG}>Web:</strong> React + Vite + Tailwind, mapa em Leaflet.
+            </li>
+            <li>
+              <strong className={STRONG}>Testes:</strong> 67 testes automatizados no backend, sem
+              depender de banco.
+            </li>
           </ul>
-        </SectionCard>
+        </Section>
+
+        <Section id="proximos-passos" title="12. Próximos passos">
+          <ul className={LIST}>
+            <li>Nowcasting de chuva com <strong className={STRONG}>U-RNN</strong>.</li>
+            <li>Integração com hardware real: LoRaWAN, Meshtastic, MQTT.</li>
+            <li>Autenticação, perfis de operador e persistência de alertas.</li>
+            <li>
+              Persistir abrigos na tabela <code className="text-slate-500">shelters</code>, que já
+              existe no schema PostGIS.
+            </li>
+            <li>Atualização de ocupação de abrigo em tempo real pelo operador.</li>
+            <li>Fila de solicitações de cadastro de abrigo, com triagem da Defesa Civil.</li>
+            <li>App do cidadão para recebimento de avisos.</li>
+          </ul>
+        </Section>
+
+        <DemoNotice />
       </div>
-
-      <DemoNotice>
-        Nenhuma tela desta plataforma afirma que há sensores físicos,
-        LoRaWAN, Meshtastic ou MQTT reais em operação — software-only e
-        hardware-agnóstico. FloodGuard não substitui a análise da Defesa
-        Civil.
-      </DemoNotice>
     </div>
   );
 }

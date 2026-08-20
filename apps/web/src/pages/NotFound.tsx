@@ -11,10 +11,10 @@ import { PageHeader } from "../components/PageHeader";
  */
 
 const SUGGESTIONS = [
-  { to: "/painel", label: "Painel operacional", description: "Risco por cenário e ação recomendada" },
-  { to: "/mapa", label: "Mapa de risco", description: "Zonas HAND de Blumenau" },
-  { to: "/telemetria", label: "Telemetria", description: "Testar o motor de risco" },
-  { to: "/sobre", label: "Sobre", description: "O que é real e o que é simulado" },
+  { to: "/painel", label: "Painel", description: "Situação atual e próxima ação" },
+  { to: "/mapa", label: "Mapa", description: "Onde estão os alertas e abrigos" },
+  { to: "/alertas", label: "Alertas", description: "Fila de eventos em monitoramento" },
+  { to: "/telemetria", label: "Telemetria", description: "Avaliar uma leitura" },
 ];
 
 export function NotFound() {
@@ -24,17 +24,13 @@ export function NotFound() {
     <div>
       <PageHeader
         title="Página não encontrada"
-        description="A rota acessada não existe nesta plataforma."
+        description="Escolha um destino abaixo."
       />
 
       <div className="panel p-4 mb-6">
         <p className="text-sm text-slate-400">
           Nenhuma tela responde por{" "}
           <code className="text-risk-attention font-mono break-all">{location.pathname}</code>.
-        </p>
-        <p className="text-xs text-slate-500 mt-1">
-          Isso não é uma falha do sistema — a URL simplesmente não corresponde a
-          nenhuma rota registrada. Escolha um destino abaixo.
         </p>
       </div>
 

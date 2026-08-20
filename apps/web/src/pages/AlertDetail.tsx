@@ -4,7 +4,6 @@ import { fetchDemoAlertById, type DemoAlert } from "../lib/api";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
-import { DemoNotice } from "../components/DemoNotice";
 import { FactorBar } from "../components/FactorBar";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
@@ -33,7 +32,7 @@ export function AlertDetail() {
       if (message.includes("404")) {
         setNotFound(true);
       } else {
-        setError("Não foi possível carregar o alerta. A API está rodando?");
+        setError("Sem resposta da API de alertas. Verifique se o backend está no ar.");
       }
     });
   }, [id]);
@@ -41,10 +40,10 @@ export function AlertDetail() {
   if (notFound) {
     return (
       <div>
-        <PageHeader title="Alerta não encontrado" description={`Nenhum evento simulado com id "${id}".`} />
+        <PageHeader title="Alerta não encontrado" />
         <EmptyState
           title="Este alerta não existe"
-          description="Os alertas simulados são fixos (seguro, alerta, critico) — verifique o link ou volte para a lista."
+          description={`Nenhum evento com id "${id}". Volte para a lista.`}
         />
         <Link to="/alertas" className="inline-block mt-4 text-sm text-accent hover:underline underline-offset-2">
           ← Voltar para Alertas
@@ -69,7 +68,7 @@ export function AlertDetail() {
     return (
       <div>
         <PageHeader title="Detalhe do alerta" />
-        <EmptyState title="Carregando…" description={`Consultando /api/alerts/demo/${id}.`} />
+        <EmptyState loading title="Carregando…" />
       </div>
     );
   }
@@ -81,18 +80,9 @@ export function AlertDetail() {
       <PageHeader
         eyebrow="Evento simulado"
         title={alert.title}
-        description={`Região: ${alert.region ?? "não informada"} · ${new Date(alert.timestamp).toLocaleString("pt-BR")}`}
+        description={`${alert.region ?? "Região não informada"} · ${new Date(alert.timestamp).toLocaleString("pt-BR")}`}
         actions={<StatusBadge level={alert.risk_level} />}
       />
-
-      <div className="mb-6">
-        <DemoNotice>
-          Origem simulada — este alerta vem de{" "}
-          <code className="text-slate-400">/api/alerts/demo/{alert.id}</code>, derivado do motor de
-          risco sobre um cenário fixo de demonstração. Não é uma emissão real da
-          Defesa Civil e não há persistência em banco.
-        </DemoNotice>
-      </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <SectionCard title="Avaliação de risco" className="md:col-span-2">
@@ -111,28 +101,25 @@ export function AlertDetail() {
               </p>
             </div>
           </div>
-          <FactorBar label="Score de risco" value={alert.risk_score} hint="composto pelo motor" />
+          <FactorBar label="Score de risco" value={alert.risk_score} />
         </SectionCard>
 
         <SectionCard title="Status do evento">
-          <p className="mb-1 text-sm font-medium text-slate-100">
+          <p className="text-sm font-medium text-slate-100">
             {STATUS_LABEL[alert.status] ?? alert.status}
           </p>
-          <p className="font-mono text-xs text-slate-500">{alert.status}</p>
-          <dl className="mt-4 flex flex-col gap-2 border-t border-navy-700/70 pt-4 text-xs">
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">source</dt>
-              <dd className="font-mono text-slate-300">{alert.source}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">simulated</dt>
-              <dd className="font-mono text-risk-attention">{String(alert.simulated)}</dd>
-            </div>
-          </dl>
+          <p className="mt-4 border-t border-navy-700/70 pt-4 text-xs text-slate-500">
+            Região: <span className="text-slate-300">{alert.region ?? "não informada"}</span>
+          </p>
+          {alert.simulated && (
+            <p className="mt-2 text-xs text-slate-500">
+              Origem: <span className="text-risk-attention">simulada</span>
+            </p>
+          )}
         </SectionCard>
       </div>
 
-      <SectionCard title="Justificativa do motor" className="mb-4">
+      <SectionCard title="Justificativa" className="mb-4">
         <p className="text-sm leading-relaxed text-slate-400">{alert.explanation}</p>
       </SectionCard>
 
@@ -163,7 +150,7 @@ export function AlertDetail() {
           to="/telemetria"
           className="inline-flex items-center rounded-lg border border-navy-600 px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
         >
-          Testar outros valores em Telemetria
+          Testar na Telemetria
         </Link>
         <Link
           to="/alertas"

@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { fetchDemoShelters, type DemoShelter } from "../lib/api";
 import { PageHeader } from "../components/PageHeader";
-import { SectionCard } from "../components/SectionCard";
-import { DemoNotice } from "../components/DemoNotice";
 import { MetricCard } from "../components/MetricCard";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
@@ -13,6 +10,10 @@ import { EmptyState } from "../components/EmptyState";
  * backend, sem persistência — ver app/routers/shelters.py). Antes da F7
  * esta tela usava dados fixos no próprio frontend; agora o frontend só
  * exibe o que a API manda, mesmo que a API também seja "só" uma simulação.
+ *
+ * Tela de operação: nome, local, capacidade, ocupação, vagas, status e
+ * instrução. O roadmap de persistência/cadastro saiu daqui para /sobre
+ * (F11) — o operador precisa encaminhar alguém, não ler o backlog.
  */
 
 const STATUS_STYLE: Record<string, { label: string; className: string; barClass: string }> = {
@@ -33,13 +34,13 @@ export function Shelters() {
   useEffect(() => {
     fetchDemoShelters()
       .then((data) => setShelters(data.shelters))
-      .catch(() => setError("Não foi possível carregar os abrigos simulados. A API está rodando?"));
+      .catch(() => setError("Sem resposta da API de abrigos. Verifique se o backend está no ar."));
   }, []);
 
   if (error) {
     return (
       <div>
-        <PageHeader title="Abrigos" description="Abrigos simulados para demonstração." />
+        <PageHeader eyebrow="Capacidade de acolhimento" title="Abrigos" />
         <ErrorState message={error} />
       </div>
     );
@@ -57,35 +58,23 @@ export function Shelters() {
       <PageHeader
         eyebrow="Capacidade de acolhimento"
         title="Abrigos"
-        description="Dados simulados para demonstração — capacidade e ocupação de abrigos de apoio, consumidos de /api/shelters/demo."
+        description="Vagas disponíveis para encaminhamento. Dados simulados."
       />
 
-      <div className="mb-4">
-        <DemoNotice>
-          Estes abrigos são <strong className="text-slate-300">inteiramente simulados</strong> — nomes
-          genéricos, sem vínculo confirmado com instituição real, sem persistência em
-          banco. Relacionados aos eventos simulados em{" "}
-          <Link to="/alertas" className="text-accent underline underline-offset-2">
-            Alertas
-          </Link>
-          .
-        </DemoNotice>
-      </div>
-
       {list.length === 0 && !error && (
-        <EmptyState loading title="Carregando abrigos…" description="Consultando /api/shelters/demo." />
+        <EmptyState loading title="Carregando abrigos…" />
       )}
 
       {list.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <MetricCard label="Abrigos simulados" value={String(list.length)} hint="via API, sem persistência" />
+          <MetricCard label="Abrigos" value={String(list.length)} hint="simulados" />
           <MetricCard label="Capacidade total" value={String(totalCapacity)} hint="pessoas" />
           <MetricCard label="Ocupação atual" value={String(totalOccupancy)} hint="pessoas acolhidas" />
           <MetricCard
             label="Vagas restantes"
             value={String(available)}
             accentClass={available > 0 ? "text-risk-safe" : "text-risk-critical"}
-            hint="exclui abrigos indisponíveis"
+            hint="exclui indisponíveis"
           />
         </div>
       )}
@@ -152,19 +141,6 @@ export function Shelters() {
         })}
       </div>
 
-      <SectionCard title="O que falta para isto virar funcionalidade real">
-        <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
-          <li>
-            Persistir abrigos na tabela <code className="text-slate-500">shelters</code>, que já
-            existe no schema PostGIS (hoje a lista vive só em memória no backend).
-          </li>
-          <li>Fila de solicitações de cadastro enviadas por cidadãos, com triagem da Defesa Civil.</li>
-          <li>Atualização de ocupação em tempo real pelo operador.</li>
-          <li>
-            Localização dos abrigos no <Link to="/mapa" className="text-accent underline underline-offset-2">mapa</Link>, cruzada com as zonas HAND.
-          </li>
-        </ul>
-      </SectionCard>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { fetchDemoAlerts, type DemoAlert, type RiskLevel } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { PageHeader } from "../components/PageHeader";
-import { DemoNotice } from "../components/DemoNotice";
 import { RiskLegend } from "../components/RiskLegend";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
@@ -30,13 +29,13 @@ export function Alertas() {
   useEffect(() => {
     fetchDemoAlerts()
       .then((data) => setAlerts(data.alerts))
-      .catch(() => setError("Não foi possível carregar os alertas simulados. A API está rodando?"));
+      .catch(() => setError("Sem resposta da API de alertas. Verifique se o backend está no ar."));
   }, []);
 
   if (error) {
     return (
       <div>
-        <PageHeader title="Alertas" description="Alertas simulados, derivados do motor de risco." />
+        <PageHeader eyebrow="Fila operacional" title="Alertas" />
         <ErrorState message={error} />
       </div>
     );
@@ -52,24 +51,9 @@ export function Alertas() {
       <PageHeader
         eyebrow="Fila operacional"
         title="Alertas"
-        description="Eventos simulados, derivados do motor de risco (/api/alerts/demo) — não há alerta real emitido pela Defesa Civil nesta PoC."
+        description="Eventos em monitoramento, com gravidade e ação recomendada."
         actions={<RiskLegend />}
       />
-
-      <div className="mb-4">
-        <DemoNotice>
-          Todo evento abaixo é <strong className="text-slate-300">simulado</strong>, sem
-          persistência em banco. Quer testar outros valores?{" "}
-          <Link to="/telemetria" className="text-accent underline underline-offset-2">
-            Ir para Telemetria
-          </Link>
-          . Abrigos de apoio a esses eventos:{" "}
-          <Link to="/abrigos" className="text-accent underline underline-offset-2">
-            ver Abrigos
-          </Link>
-          .
-        </DemoNotice>
-      </div>
 
       <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-navy-700/70 bg-navy-900/50 p-2">
         <button
@@ -113,11 +97,11 @@ export function Alertas() {
       </div>
 
       {list.length === 0 && !error && (
-        <EmptyState loading title="Carregando alertas…" description="Consultando /api/alerts/demo." />
+        <EmptyState loading title="Carregando alertas…" />
       )}
 
       {list.length > 0 && visible.length === 0 && (
-        <EmptyState title="Nenhum alerta neste filtro" description="Tente outro nível ou desmarque “Somente ativos/críticos”." />
+        <EmptyState title="Nenhum alerta neste filtro" description="Ajuste o nível ou desmarque “Somente ativos/críticos”." />
       )}
 
       <div className="flex flex-col gap-4">
@@ -152,7 +136,7 @@ export function Alertas() {
                     </span>
                   </div>
                   <p className="mb-3 text-xs text-slate-500">
-                    {alert.region ?? "região não informada"} ·{" "}
+                    {alert.region ?? "Região não informada"} ·{" "}
                     {STATUS_LABEL[alert.status] ?? alert.status} ·{" "}
                     {new Date(alert.timestamp).toLocaleString("pt-BR")}
                   </p>

@@ -7,8 +7,10 @@ import { RISK_THEME } from "../lib/riskTheme";
  * alta), não os nomes dos níveis de risco. As cores são as mesmas do
  * RISK_THEME de propósito — consistência visual com o resto do produto —
  * mas chamar uma zona HAND de "Crítico" sugeria risco em tempo real, o que
- * contradiz o próprio texto da página (HAND é suscetibilidade estática).
- * Correção da auditoria F6.2.
+ * o HAND (suscetibilidade estática) não representa. Correção da F6.2.
+ *
+ * Só rótulo: a legenda identifica camadas, não ensina metodologia — a
+ * definição de HAND vive em /sobre (F11).
  */
 const HAND_CLASSES = [
   { label: "Muito baixa", hex: RISK_THEME.seguro.hex },
@@ -49,25 +51,25 @@ export function MapLegend() {
         <LegendGroup title="Camadas">
           <span className="flex items-center gap-2 text-[11px] text-slate-300">
             <span className="h-0.5 w-4 shrink-0 rounded-full bg-accent" />
-            Limite de Blumenau/SC
+            Limite municipal
           </span>
           <span className="flex items-center gap-2 text-[11px] text-slate-300">
             <span className="h-2 w-2 shrink-0 rotate-45 bg-accent" />
-            Abrigos simulados
+            Abrigos
           </span>
         </LegendGroup>
 
-        <LegendGroup title="Alertas simulados">
+        <LegendGroup title="Alertas">
           <span className="flex items-center gap-2 text-[11px] text-slate-300">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400" />
-            Evento de demonstração
+            Evento simulado
           </span>
           <span className="flex items-center gap-2 text-[11px] text-slate-300">
             <span className="relative h-2.5 w-2.5 shrink-0">
               <span className="absolute inset-[-3px] animate-ping rounded-full bg-risk-critical/40" />
               <span className="relative block h-2.5 w-2.5 rounded-full bg-risk-critical" />
             </span>
-            Crítico (destaque pulsante)
+            Crítico
           </span>
         </LegendGroup>
       </div>

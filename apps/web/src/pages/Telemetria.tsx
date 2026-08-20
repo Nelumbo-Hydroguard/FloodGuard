@@ -8,7 +8,6 @@ import {
 import { RiskCard } from "../components/RiskCard";
 import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
-import { DemoNotice } from "../components/DemoNotice";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
@@ -65,10 +64,10 @@ const QUICK_EXAMPLES: Record<"seguro" | "alerta" | "critico", FormState> = {
 
 // Pesos idênticos a app/engine/spatial_context.py::HAND_CLASSES_BY_ID.
 const HAND_CLASS_OPTIONS = [
-  { id: "3", weight: "0.1", label: "3 — Muito baixa suscetibilidade (peso 0.1)" },
-  { id: "2", weight: "0.3", label: "2 — Baixa suscetibilidade (peso 0.3)" },
-  { id: "1", weight: "0.6", label: "1 — Média suscetibilidade (peso 0.6)" },
-  { id: "0", weight: "0.9", label: "0 — Alta suscetibilidade (peso 0.9)" },
+  { id: "3", weight: "0.1", label: "Muito baixa · 0.1" },
+  { id: "2", weight: "0.3", label: "Baixa · 0.3" },
+  { id: "1", weight: "0.6", label: "Média · 0.6" },
+  { id: "0", weight: "0.9", label: "Alta · 0.9" },
 ];
 
 const WEIGHT_BY_HAND_CLASS: Record<string, string> = Object.fromEntries(
@@ -155,7 +154,7 @@ export function Telemetria() {
       const response = await buildMeshPayload(buildRequestPayload());
       setMeshPayload(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao gerar payload simulado.");
+      setError(err instanceof Error ? err.message : "Falha ao gerar payload.");
     } finally {
       setLoading(null);
     }
@@ -166,15 +165,8 @@ export function Telemetria() {
       <PageHeader
         eyebrow="Console do motor de risco"
         title="Telemetria"
-        description="Ferramenta de teste operacional do motor de risco — nenhum sensor real por trás deste formulário."
+        description="Informe a leitura e avalie o risco. Valores simulados."
       />
-
-      <div className="mb-6">
-        <DemoNotice>
-          Formulário de teste — os valores abaixo são digitados manualmente ou
-          carregados de um exemplo fixo, não vêm de sensor de campo.
-        </DemoNotice>
-      </div>
 
       {/* Entrada à esquerda, saída à direita e fixa: é o gesto de uma
           ferramenta operacional — mexe no parâmetro, vê o motor responder,
@@ -182,8 +174,8 @@ export function Telemetria() {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex flex-col gap-4">
       <SectionCard
-        title="Exemplos rápidos"
-        subtitle="Preenche o formulário com um cenário de referência."
+        title="Presets"
+        subtitle="Carrega um cenário de referência."
       >
         <div className="grid grid-cols-3 gap-2">
           {(["seguro", "alerta", "critico"] as const).map((key) => {
@@ -206,7 +198,7 @@ export function Telemetria() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Parâmetros da leitura">
+      <SectionCard title="Leitura">
         <form onSubmit={handleEvaluate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className={fieldLabelClass()}>
             Latitude
@@ -225,7 +217,7 @@ export function Telemetria() {
             <input className={inputClass()} type="number" min={0} step={0.1} value={form.water_level_m} onChange={field("water_level_m")} required />
           </label>
           <label className={fieldLabelClass()}>
-            Nível d'água anterior (m) — usado para calcular tendência
+            Nível d'água anterior (m)
             <input
               className={inputClass()}
               type="number"
@@ -233,13 +225,13 @@ export function Telemetria() {
               step={0.1}
               value={form.previous_water_level_m}
               onChange={field("previous_water_level_m")}
-              placeholder="em branco = tendência neutra"
+              placeholder="vazio = tendência neutra"
             />
           </label>
           <label className={fieldLabelClass()}>
             Classe HAND
             <select className={inputClass()} value={form.hand_class_id} onChange={handleHandClassChange}>
-              <option value="">sem contexto HAND (fallback)</option>
+              <option value="">Sem contexto HAND</option>
               {HAND_CLASS_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}
@@ -248,7 +240,7 @@ export function Telemetria() {
             </select>
           </label>
           <label className={fieldLabelClass()}>
-            Peso HAND (0 a 1) — preenchido pela classe; edite para sobrepor
+            Peso HAND (0–1)
             <input className={inputClass()} type="number" min={0} max={1} step={0.05} value={form.hand_risk_weight} onChange={field("hand_risk_weight")} />
           </label>
           <label className={fieldLabelClass()}>
@@ -261,7 +253,7 @@ export function Telemetria() {
             </select>
           </label>
           <label className={`${fieldLabelClass()} md:col-span-2`}>
-            Região (opcional — usada no payload simulado e no lookup HAND mockado)
+            Região (opcional)
             <input className={inputClass()} value={form.region} onChange={field("region")} />
           </label>
 
@@ -295,7 +287,7 @@ export function Telemetria() {
             !error && (
               <EmptyState
                 title="Nenhuma avaliação ainda"
-                description="Escolha um exemplo rápido ou ajuste os parâmetros e clique em “Avaliar risco” para ver o motor decompor o score."
+                description="Escolha um preset ou preencha a leitura e clique em “Avaliar risco”."
               />
             )
           )}
@@ -306,12 +298,11 @@ export function Telemetria() {
                 <span className="rounded-full border border-risk-critical/40 bg-risk-critical/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-risk-critical">
                   implemented: false
                 </span>
-                <span className="text-[11px] text-slate-500">transmissão real não implementada</span>
+                <span className="text-[11px] text-slate-500">transmissão não implementada</span>
               </div>
               <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-navy-700 bg-navy-950 p-3 font-mono text-[11px] leading-relaxed text-slate-400">
                 {JSON.stringify(meshPayload, null, 2)}
               </pre>
-              <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{meshPayload.note}</p>
             </SectionCard>
           )}
         </div>

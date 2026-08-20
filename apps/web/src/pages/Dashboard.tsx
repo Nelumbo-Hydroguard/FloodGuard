@@ -10,7 +10,6 @@ import { RISK_THEME, riskWeight } from "../lib/riskTheme";
 import { RiskCard } from "../components/RiskCard";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
-import { DemoNotice } from "../components/DemoNotice";
 import { RiskLegend } from "../components/RiskLegend";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
@@ -43,13 +42,13 @@ export function Dashboard() {
 
     fetchScenariosDemo()
       .then(setScenarios)
-      .catch(() => setError("Não foi possível carregar os cenários simulados. A API está rodando em http://localhost:8000?"));
+      .catch(() => setError("Sem resposta do motor de risco. Verifique se a API está no ar (http://localhost:8000)."));
   }, []);
 
   if (error) {
     return (
       <div>
-        <PageHeader title="Painel operacional" description="Defesa Civil de Blumenau/SC — PoC FloodGuard" />
+        <PageHeader eyebrow="Defesa Civil · Blumenau/SC" title="Painel operacional" />
         <ErrorState message={error} />
       </div>
     );
@@ -71,12 +70,16 @@ export function Dashboard() {
     ? results.reduce((sum, r) => sum + r.result.confidence, 0) / results.length
     : null;
 
+  const needAttention = results.filter(
+    ({ result }) => riskWeight(result.risk_level) >= riskWeight("alerta"),
+  ).length;
+
   return (
     <div>
       <PageHeader
         eyebrow="Defesa Civil · Blumenau/SC"
         title="Painel operacional"
-        description="Resumo do motor de risco — os três cenários de referência avaliados em tempo de requisição."
+        description="Situação atual dos cenários monitorados e próxima ação recomendada."
         actions={
           apiOnline !== null && (
             <span
@@ -96,13 +99,9 @@ export function Dashboard() {
         }
       />
 
-      <div className="mb-4">
-        <DemoNotice />
-      </div>
-
       {results.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <MetricCard label="Cenários avaliados" value={String(results.length)} hint="rodados pelo motor real" />
+          <MetricCard label="Cenários monitorados" value={String(results.length)} hint="simulados" />
           <MetricCard
             label="Maior risco"
             variant="text"
@@ -111,15 +110,15 @@ export function Dashboard() {
             hint={highest ? scenarioTitle(highest.result.risk_level) : undefined}
           />
           <MetricCard
-            label="Confiança média"
-            value={avgConfidence != null ? `${Math.round(avgConfidence * 100)}%` : "—"}
-            hint={`entre os ${results.length} cenários`}
+            label="Precisam de atenção"
+            value={String(needAttention)}
+            accentClass={needAttention > 0 ? "text-risk-alert" : "text-risk-safe"}
+            hint="alerta ou crítico"
           />
           <MetricCard
-            label="Comunicação"
-            variant="text"
-            value="Simulada"
-            hint="UniMesh/LoRa, implemented: false"
+            label="Confiança média"
+            value={avgConfidence != null ? `${Math.round(avgConfidence * 100)}%` : "—"}
+            hint={`entre ${results.length} cenários`}
           />
         </div>
       )}
@@ -139,15 +138,14 @@ export function Dashboard() {
               {highest.result.recommended_action}
             </p>
             <p className="text-xs text-slate-500">
-              Baseado no cenário de maior risco simulado (
-              {scenarioTitle(highest.result.risk_level).toLowerCase()}).
+              {scenarioTitle(highest.result.risk_level)} · maior risco no momento
             </p>
           </div>
         </div>
       )}
 
       <div className="mb-4 flex items-center justify-between gap-4 border-b border-navy-700/70 pb-3">
-        <p className="data-label">Cenários avaliados</p>
+        <p className="data-label">Cenários monitorados</p>
         <RiskLegend />
       </div>
 
@@ -158,11 +156,7 @@ export function Dashboard() {
           ))}
         </div>
       ) : (
-        <EmptyState
-          loading
-          title="Carregando cenários…"
-          description="Consultando o motor de risco em /api/scenarios/demo."
-        />
+        <EmptyState loading title="Carregando cenários…" description="Consultando o motor de risco." />
       )}
     </div>
   );

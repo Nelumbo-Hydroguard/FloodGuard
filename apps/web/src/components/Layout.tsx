@@ -1,13 +1,17 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { BrandMark } from "./BrandMark";
 
+/**
+ * A navegação principal carrega SÓ operação. "Sobre / Saiba mais" é
+ * documentação: vive à direita, em peso visual secundário, para não
+ * competir com Painel/Mapa/Alertas na hora de uma ocorrência (F11).
+ */
 const NAV_ITEMS = [
   { to: "/painel", label: "Painel" },
   { to: "/mapa", label: "Mapa" },
   { to: "/alertas", label: "Alertas" },
   { to: "/telemetria", label: "Telemetria" },
   { to: "/abrigos", label: "Abrigos" },
-  { to: "/sobre", label: "Sobre" },
 ];
 
 /**
@@ -21,6 +25,7 @@ const FULL_BLEED_ROUTES = new Set(["/mapa"]);
 export function Layout() {
   const location = useLocation();
   const fullBleed = FULL_BLEED_ROUTES.has(location.pathname);
+  const aboutActive = location.pathname.startsWith("/sobre");
 
   return (
     <div className="min-h-screen bg-navy-950 text-slate-100">
@@ -31,6 +36,7 @@ export function Layout() {
           <Link to="/" className="flex shrink-0 items-center gap-2.5 group">
             <BrandMark className="h-6 w-6 text-accent transition-transform duration-200 group-hover:scale-105" />
             <span className="font-display text-[15px] font-bold tracking-tight text-white">
+              <span className="mr-1 font-medium text-slate-400">Nelumbo</span>
               Flood<span className="text-accent">Guard</span>
             </span>
           </Link>
@@ -70,6 +76,16 @@ export function Layout() {
             <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-accent shadow-[0_0_8px_var(--glow-accent)]" />
             Modo demo — dados simulados
           </span>
+
+          <Link
+            to="/sobre"
+            aria-current={aboutActive ? "page" : undefined}
+            className={`shrink-0 whitespace-nowrap text-[12px] transition-colors ${
+              aboutActive ? "text-slate-200" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            Saiba mais
+          </Link>
         </div>
       </header>
 
