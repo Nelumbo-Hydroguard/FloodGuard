@@ -14,7 +14,7 @@ const SUGGESTIONS = [
   { to: "/painel", label: "Painel", description: "Situação atual e próxima ação" },
   { to: "/mapa", label: "Mapa", description: "Onde estão os alertas e abrigos" },
   { to: "/alertas", label: "Alertas", description: "Fila de eventos em monitoramento" },
-  { to: "/telemetria", label: "Telemetria", description: "Avaliar uma leitura" },
+  { to: "/operacao", label: "Operação", description: "Fila de pedidos SOS" },
 ];
 
 export function NotFound() {

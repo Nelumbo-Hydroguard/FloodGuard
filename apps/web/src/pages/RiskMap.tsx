@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import { GeoJSON, MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
@@ -16,6 +16,11 @@ import {
   type RiskLevel,
 } from "../lib/api";
 import { RISK_THEME, type RiskTheme } from "../lib/riskTheme";
+import { alertIcon, sensorIcon, shelterIcon, sosIcon } from "../lib/mapMarkers";
+import { DEMO_SENSORS } from "../data/demoOperations";
+import { SOS_STATUS_STYLE, formatClock, waterLevelLabel } from "../lib/operations";
+import { useOperations } from "../state/OperationsProvider";
+import { DEFAULT_LAYERS, MapLayerControl, type MapLayers } from "../components/MapLayerControl";
 import { PageHeader } from "../components/PageHeader";
 import { MapLegend } from "../components/MapLegend";
 import { MapAlertRail } from "../components/MapAlertRail";
@@ -39,57 +44,27 @@ function themeForSusceptibility(susceptibility: string): RiskTheme {
   return RISK_THEME[level];
 }
 
-// Marcador de alerta simulado. Nível "crítico" ganha um anel pulsante
-// (Tailwind `animate-ping`) — ideia inspirada no destaque visual de estado
-// crítico do projeto de referência TechGuard Sentinela (João Benvenutti,
-// ver docs/auditoria-mapa-benvenutti-f9-1.md), reimplementada aqui só com
-// CSS/Tailwind já disponíveis no projeto, sem nova dependência.
-function alertIcon(theme: RiskTheme, level: RiskLevel) {
-  const pulse =
-    level === "critico"
-      ? `<div class="animate-ping" style="position:absolute;inset:-6px;border-radius:9999px;background:${theme.hex};opacity:0.45;"></div>`
-      : "";
-  return L.divIcon({
-    className: "",
-    html: `<div style="position:relative;width:16px;height:16px;">${pulse}<div style="position:relative;width:16px;height:16px;border-radius:9999px;background:${theme.hex};border:2px solid #040b14;box-shadow:0 0 0 2px ${theme.hex}55, 0 0 12px ${theme.hex}99;"></div></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  });
-}
-
-// Ícone quadrado (não círculo) pra abrigo nunca ser confundido visualmente
-// com um ponto de cenário de risco — são camadas de natureza diferente.
-function shelterIcon() {
-  return L.divIcon({
-    className: "",
-    html: `<div style="width:14px;height:14px;background:#22d3ee;border:2px solid #040b14;transform:rotate(45deg);box-shadow:0 0 10px rgba(34,211,238,0.5);"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
-}
-
 /**
- * Foca (voa até) e abre o popup do alerta indicado por `?alert=<id>` na URL
- * (F9.1) — usado pelos links "Ver no mapa" de /alertas e /alertas/:id, e
- * pela trilha lateral de alertas (F10).
- * Precisa estar dentro de <MapContainer> pra ter acesso ao `useMap()`.
+ * Foca (voa até) e abre o popup do ponto indicado na URL.
+ *
+ * Atende `?alert=<id>` (F9.1 — links "Ver no mapa" de /alertas e da trilha
+ * lateral) e `?sos=<id>` (F11 — "Ver no mapa" da central de atendimento). É
+ * o MESMO mecanismo para os dois: quem chama só informa a coordenada e o
+ * ref do marcador. Precisa estar dentro de <MapContainer> pra ter acesso ao
+ * `useMap()`.
  */
-function MapAlertFocus({
-  alerts,
-  focusId,
+function MapFocus({
+  target,
   markerRefs,
 }: {
-  alerts: DemoAlert[] | null;
-  focusId: string | null;
+  target: { id: string; latitude: number; longitude: number } | null;
   markerRefs: MutableRefObject<Record<string, L.Marker>>;
 }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!focusId || !alerts) return;
-    const alert = alerts.find((a) => a.id === focusId);
-    if (!alert) return;
-
+    if (!target) return;
+    const alert = target;
     map.flyTo([alert.latitude, alert.longitude], 13, { duration: 0.8 });
 
     // Abrir no `moveend`, não num setTimeout menor que a animação: abrindo
@@ -101,7 +76,7 @@ function MapAlertFocus({
     return () => {
       map.off("moveend", openPopup);
     };
-  }, [focusId, alerts, map, markerRefs]);
+  }, [target?.id, target?.latitude, target?.longitude, map, markerRefs]);
 
   return null;
 }
@@ -109,6 +84,8 @@ function MapAlertFocus({
 export function RiskMap() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusAlertId = searchParams.get("alert");
+  const focusSosId = searchParams.get("sos");
+  const { sosRequests } = useOperations();
 
   const [demoMap, setDemoMap] = useState<DemoMapResponse | null>(null);
   const [alerts, setAlerts] = useState<DemoAlert[] | null>(null);
@@ -117,6 +94,25 @@ export function RiskMap() {
   const [handZones, setHandZones] = useState<GeoJsonObject | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const alertMarkerRefs = useRef<Record<string, L.Marker>>({});
+  const sosMarkerRefs = useRef<Record<string, L.Marker>>({});
+
+  /**
+   * Chegar por `?sos=<id>` liga a camada de pedidos automaticamente — não
+   * adianta focar um marcador que a camada padrão mantém desligado. O mesmo
+   * vale para `?alert=`, que já vem ligado por padrão.
+   */
+  const [layers, setLayers] = useState<MapLayers>(() =>
+    focusSosId ? { ...DEFAULT_LAYERS, sos: true } : DEFAULT_LAYERS,
+  );
+
+  const focusedAlert = useMemo(
+    () => (focusAlertId ? (alerts ?? []).find((alert) => alert.id === focusAlertId) ?? null : null),
+    [focusAlertId, alerts],
+  );
+  const focusedSos = useMemo(
+    () => (focusSosId ? sosRequests.find((request) => request.id === focusSosId) ?? null : null),
+    [focusSosId, sosRequests],
+  );
 
   useEffect(() => {
     fetchDemoMap()
@@ -262,7 +258,8 @@ export function RiskMap() {
             />
           )}
 
-          {alerts?.map((alert) => (
+          {layers.alertas &&
+            alerts?.map((alert) => (
             <Marker
               key={alert.id}
               position={[alert.latitude, alert.longitude]}
@@ -279,11 +276,90 @@ export function RiskMap() {
                 <AlertMapPopup alert={alert} />
               </Popup>
             </Marker>
-          ))}
+            ))}
 
-          <MapAlertFocus alerts={alerts} focusId={focusAlertId} markerRefs={alertMarkerRefs} />
+          <MapFocus
+            target={focusedAlert ?? null}
+            markerRefs={alertMarkerRefs}
+          />
+          <MapFocus target={focusedSos ?? null} markerRefs={sosMarkerRefs} />
 
-          {shelters?.map((shelter) => (
+          {layers.sensores &&
+            DEMO_SENSORS.map((sensor) => (
+              <Marker
+                key={sensor.id}
+                position={[sensor.latitude, sensor.longitude]}
+                icon={sensorIcon(sensor.status === "offline")}
+              >
+                <Popup>
+                  <div className="min-w-[196px]">
+                    <strong className="text-[13px] font-semibold text-white">
+                      {sensor.id} · {sensor.label}
+                    </strong>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {sensor.region} · {sensor.status}
+                    </p>
+                    <p className="mt-2 font-mono text-sm text-slate-200">
+                      {sensor.waterLevelM.toFixed(2)} m
+                      <span className="ml-2 text-slate-500">{sensor.rainfallMm} mm</span>
+                    </p>
+                    <Link
+                      to="/telemetria"
+                      className="mt-2 inline-block text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+                    >
+                      Abrir telemetria →
+                    </Link>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+          {layers.sos &&
+            sosRequests.map((request) => (
+              <Marker
+                key={request.id}
+                position={[request.latitude, request.longitude]}
+                icon={sosIcon(request.status !== "resolvido")}
+                ref={(instance) => {
+                  if (instance) sosMarkerRefs.current[request.id] = instance;
+                  else delete sosMarkerRefs.current[request.id];
+                }}
+              >
+                <Popup autoPanPaddingTopLeft={[372, 32]} autoPanPaddingBottomRight={[332, 32]}>
+                  <div className="min-w-[212px]">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="font-mono text-[12px] text-white">{request.id}</strong>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${SOS_STATUS_STYLE[request.status].badgeClass}`}
+                      >
+                        {SOS_STATUS_STYLE[request.status].label}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">
+                      {request.name ?? "Anônimo"} · {formatClock(request.createdAt)}
+                    </p>
+                    <p className="mt-2 text-[11px] text-slate-300">
+                      {request.peopleCount} {request.peopleCount === 1 ? "pessoa" : "pessoas"} ·{" "}
+                      {waterLevelLabel(request.waterLevel)}
+                    </p>
+                    {request.reducedMobility && (
+                      <p className="mt-1 text-[11px] text-risk-attention">
+                        {request.reducedMobilityCount} com mobilidade reduzida
+                      </p>
+                    )}
+                    <Link
+                      to="/operacao"
+                      className="mt-2 inline-block text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+                    >
+                      Abrir na central →
+                    </Link>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+          {layers.abrigos &&
+            shelters?.map((shelter) => (
             <Marker key={shelter.id} position={[shelter.latitude, shelter.longitude]} icon={shelterIcon()}>
               <Popup>
                 <div className="min-w-[200px]">
@@ -297,7 +373,7 @@ export function RiskMap() {
                 </div>
               </Popup>
             </Marker>
-          ))}
+            ))}
         </MapContainer>
 
         {/* ── HUD ───────────────────────────────────────────────────────── */}
@@ -338,6 +414,17 @@ export function RiskMap() {
         />
 
         <MapLegend />
+
+        <MapLayerControl
+          layers={layers}
+          onChange={setLayers}
+          counts={{
+            alertas: alerts?.length ?? 0,
+            abrigos: shelters?.length ?? 0,
+            sensores: DEMO_SENSORS.length,
+            sos: sosRequests.length,
+          }}
+        />
       </section>
     </>
   );

@@ -24,6 +24,7 @@ const SECTIONS = [
   { id: "telemetria", label: "Telemetria" },
   { id: "mapa", label: "Mapa e contexto geoespacial" },
   { id: "alertas", label: "Alertas" },
+  { id: "sos", label: "SOS e atendimento" },
   { id: "simulado", label: "Dados simulados" },
   { id: "limitacoes", label: "Limitações atuais" },
   { id: "arquitetura", label: "Arquitetura" },
@@ -162,9 +163,11 @@ export function Sobre() {
             <Link to="/telemetria" className="text-accent underline-offset-2 hover:underline">
               Telemetria
             </Link>{" "}
-            é o console do motor: os valores são digitados manualmente ou carregados de um preset,
-            nunca vêm de sensor de campo. Serve para testar o comportamento do motor com qualquer
-            combinação de parâmetros.
+            tem dois modos. "Avaliar leitura" é o console do motor: os valores são digitados
+            manualmente ou carregados de um preset, nunca vêm de sensor de campo. "Fluxo de
+            sensores" reproduz uma série temporal fixa de leituras chegando ao longo do tempo —
+            roteiro determinístico, sempre igual, com cada leitura avaliada pelo motor de risco
+            real (o nível de risco não está escrito na fixture).
           </p>
           <p className={`${P} mt-3`}>
             O botão "Gerar payload UniMesh/LoRa" mostra como uma mensagem compacta seria transmitida
@@ -203,27 +206,66 @@ export function Sobre() {
           </p>
         </Section>
 
-        <Section id="simulado" title="9. Dados simulados">
+        <Section id="sos" title="9. SOS e central de atendimento">
+          <p className={P}>
+            O fluxo completo da operação é: monitorar → identificar → priorizar → receber
+            pedidos → atender → encaminhar para local seguro → acompanhar. A tela de{" "}
+            <Link to="/sos" className="text-accent underline-offset-2 hover:underline">SOS</Link>{" "}
+            é o lado de quem pede ajuda; a{" "}
+            <Link to="/operacao" className="text-accent underline-offset-2 hover:underline">
+              central de operação
+            </Link>{" "}
+            é onde o pedido é triado e acompanhado.
+          </p>
+          <p className={`${P} mt-3`}>
+            O nível da água é informado por referência corporal (tornozelo, joelho, cintura…) em
+            vez de metros: quem está com a casa alagando não mede a lâmina d'água. A fila ordena
+            por vulnerabilidade, depois nível da água, depois tempo de espera.
+          </p>
+          <p className={`${P} mt-3`}>
+            <strong className={STRONG}>Nada disso é persistido.</strong> Pedidos criados, mudanças
+            de status e ajustes de ocupação de abrigo vivem apenas na sessão do navegador e
+            desaparecem ao fechar a aba. O protocolo (SOS-2026-XXXX) é demonstrativo e nenhum
+            pedido chega a qualquer órgão real.
+          </p>
+        </Section>
+
+        <Section id="simulado" title="10. Dados simulados">
           <p className={P}>
             Toda a operação da plataforma roda sobre dados simulados
             (<code className="text-slate-500">source: "simulation"</code>). Não há sensores físicos,
             LoRaWAN, Meshtastic ou MQTT reais em operação, e nada é persistido em banco entre
-            sessões. O que é real: as camadas HAND de Blumenau e o próprio motor de risco, que
-            calcula de verdade a partir do que recebe.
+            sessões. São fixtures: a rede de sensores e sua série temporal, os pedidos SOS, os
+            abrigos e seus contatos (telefones na faixa fictícia 5550, que não completa chamada).
+            Nenhum dado de pessoa real é usado.
           </p>
           <p className={`${P} mt-3`}>
-            Nenhuma tela desta plataforma afirma o contrário — o selo{" "}
+            O que é real: as camadas HAND de Blumenau e o próprio motor de risco, que calcula de
+            verdade a partir do que recebe — inclusive cada leitura do fluxo contínuo de sensores,
+            avaliada em <code className="text-slate-500">/api/risk/evaluate-batch</code>. Nenhuma
+            tela afirma o contrário: o selo{" "}
             <strong className={STRONG}>"Modo demo — dados simulados"</strong> fica visível no
             cabeçalho em todas as rotas.
           </p>
         </Section>
 
-        <Section id="limitacoes" title="10. Limitações atuais">
+        <Section id="limitacoes" title="11. Limitações atuais">
           <ul className={LIST}>
             <li>Pesos e referências de normalização do motor não são calibrados com dados de campo.</li>
             <li>HAND é suscetibilidade estática: não reage a chuva em tempo real.</li>
-            <li>Sem autenticação, sem perfis de usuário e sem trilha de auditoria.</li>
+            <li>
+              Sem autenticação, sem perfis de usuário e sem trilha de auditoria — a tela{" "}
+              <Link to="/acesso" className="text-accent underline-offset-2 hover:underline">
+                Acesso
+              </Link>{" "}
+              apenas separa os contextos de uso, não protege nada.
+            </li>
             <li>Alertas e abrigos vivem em memória no backend, sem persistência.</li>
+            <li>
+              Pedidos SOS e ajustes de abrigo existem só na sessão do navegador — recarregar em
+              outra aba ou máquina não mostra o mesmo estado.
+            </li>
+            <li>A rede de sensores é uma fixture: não há hardware, enlace nem coleta real.</li>
             <li>Sem previsão (nowcasting): o motor avalia o presente, não projeta o futuro.</li>
             <li>Cobertura territorial limitada a Blumenau/SC.</li>
             <li>
@@ -233,7 +275,7 @@ export function Sobre() {
           </ul>
         </Section>
 
-        <Section id="arquitetura" title="11. Arquitetura e tecnologia">
+        <Section id="arquitetura" title="12. Arquitetura e tecnologia">
           <ul className={LIST}>
             <li>
               <strong className={STRONG}>API:</strong> FastAPI (Python), com Swagger em{" "}
@@ -257,11 +299,13 @@ export function Sobre() {
           </ul>
         </Section>
 
-        <Section id="proximos-passos" title="12. Próximos passos">
+        <Section id="proximos-passos" title="13. Próximos passos">
           <ul className={LIST}>
             <li>Nowcasting de chuva com <strong className={STRONG}>U-RNN</strong>.</li>
             <li>Integração com hardware real: LoRaWAN, Meshtastic, MQTT.</li>
             <li>Autenticação, perfis de operador e persistência de alertas.</li>
+            <li>Persistir pedidos SOS com fila real, histórico e registro de atendimento.</li>
+            <li>Notificar o solicitante sobre o andamento do próprio pedido.</li>
             <li>
               Persistir abrigos na tabela <code className="text-slate-500">shelters</code>, que já
               existe no schema PostGIS.
