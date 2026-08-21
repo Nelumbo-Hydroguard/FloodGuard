@@ -10,6 +10,11 @@ import {
   type ScenariosDemoResponse,
 } from "../lib/api";
 import { RISK_THEME, riskWeight } from "../lib/riskTheme";
+import {
+  OPERATIONAL_ACTION_LABEL,
+  getOperationalRecommendation,
+  getOperationalRecommendationShort,
+} from "../lib/alertMessaging";
 import { RiskCard } from "../components/RiskCard";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
@@ -267,7 +272,7 @@ export function Dashboard() {
                 tone={RISK_THEME[topAlert.risk_level].dotClass}
                 label={`Alerta ${RISK_THEME[topAlert.risk_level].label.toLowerCase()}`}
                 title={topAlert.region ?? topAlert.title}
-                detail={topAlert.recommended_action}
+                detail={getOperationalRecommendationShort(topAlert.risk_level)}
                 to={`/alertas/${topAlert.id}`}
               />
             )}
@@ -309,16 +314,17 @@ export function Dashboard() {
 
       {highest && (
         <div className="panel relative mb-6 overflow-hidden p-5">
-          {/* Filete na cor do maior risco: a ação recomendada é o que a
-              Defesa Civil precisa ler primeiro. */}
+          {/* Filete na cor do maior risco: a ação OPERACIONAL é o que a
+              Defesa Civil precisa ler primeiro. Este bloco é do plantão —
+              a orientação à população é outra camada (alertMessaging.ts). */}
           <span
             className={`absolute inset-y-0 left-0 w-[3px] ${RISK_THEME[highest.result.risk_level].barClass}`}
             style={{ boxShadow: `0 0 16px var(${RISK_THEME[highest.result.risk_level].glowVar})` }}
           />
           <div className="flex flex-col gap-2 pl-2">
-            <p className="data-label">Próxima ação recomendada</p>
+            <p className="data-label">Próxima {OPERATIONAL_ACTION_LABEL.toLowerCase()}</p>
             <p className="font-display text-lg font-semibold leading-snug text-white">
-              {highest.result.recommended_action}
+              {getOperationalRecommendation(highest.result.risk_level, highest.result.recommended_action)}
             </p>
             <p className="text-xs text-slate-500">
               {scenarioTitle(highest.result.risk_level)} · maior risco no momento

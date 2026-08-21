@@ -60,11 +60,19 @@ Frontend:
 - [ ] `/mapa?alert=critico` — mapa dá `flyTo` até o marcador crítico e abre
       o popup automaticamente (F9.1)
 - [ ] `/telemetria` — testar o atalho "Crítico" e confirmar que o resultado
-      aparece com score, fatores, explicação e ação recomendada
+      aparece com score, fatores, explicação e "Ação operacional recomendada"
+- [ ] `/telemetria` — "Gerar payload UniMesh/LoRa" mostra o bloco rotulado
+      "Ação operacional recomendada" acima do JSON
 - [ ] `/alertas` mostra os filtros, os cards com badge "simulado" e o link
       "Ver no mapa →" em cada card (F9.1)
 - [ ] `/alertas/critico` mostra o detalhe completo e o link "Ver no Mapa"
       leva para `/mapa?alert=critico` com o marcador em destaque (F9.1)
+- [ ] `/alertas/critico` mostra os dois blocos separados: "Ação operacional
+      recomendada" (Defesa Civil) e "Orientação à população" (cidadão, com
+      selo "demonstrativo" e botão "Ver local seguro"), e a orientação
+      cidadã não exibe score, confiança nem HAND
+- [ ] Nenhuma tela usa o rótulo "Ação recomendada" sozinho
+- [ ] Nenhuma mensagem automática manda evacuar
 - [ ] `/abrigos` mostra os 4 perfis de ocupação com cor distinta
 - [ ] Nenhuma tela mostra erro cru (stack trace, tela branca) — se aparecer,
       não é hora de debugar ao vivo, seguir para "O que não mostrar"

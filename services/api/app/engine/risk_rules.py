@@ -1,6 +1,6 @@
 """
 Constantes e regras puras do motor de risco — pesos, referências de
-normalização, limiares de classificação e ações recomendadas.
+normalização, limiares de classificação e ações operacionais recomendadas.
 
 Nada aqui depende de banco, rede ou I/O — só números e funções puras, para
 ficar fácil de testar e auditar (mesmo espírito de transparência do motor
@@ -49,11 +49,31 @@ RISK_THRESHOLDS = [
     (1.01, "critico"),  # 1.01 para incluir 1.0 na faixa crítica com <
 ]
 
+# AÇÃO OPERACIONAL RECOMENDADA — texto dirigido ao OPERADOR / Defesa Civil,
+# nunca ao cidadão. É instrução de plantão: o que a equipe faz agora.
+#
+# O que a plataforma NÃO faz aqui, por decisão de projeto: determinar
+# evacuação, ordenar deslocamento ou garantir segurança. O FloodGuard é um
+# apoio à decisão — não tem autoridade para nenhuma dessas coisas. No nível
+# crítico ele aponta o plano de contingência e devolve a decisão a quem a
+# tem ("conforme validação da Defesa Civil"). O texto anterior deste nível
+# dizia "considerar evacuação preventiva", o que colocava o motor decidindo
+# evacuação sozinho.
+#
+# A orientação equivalente para o CIDADÃO é outra camada, demonstrativa e
+# só no frontend — apps/web/src/lib/alertMessaging.ts::getPublicGuidance.
+# Não trafega por este contrato de API nesta fase.
 RECOMMENDED_ACTIONS = {
-    "seguro": "Nenhuma ação necessária. Manter monitoramento de rotina.",
-    "atencao": "Acompanhar a evolução da chuva e do nível d'água nas próximas horas.",
-    "alerta": "Monitorar área e preparar comunicação preventiva à população.",
-    "critico": "Acionar protocolo de emergência da Defesa Civil e considerar evacuação preventiva.",
+    "seguro": "Manter o acompanhamento da região e das fontes oficiais.",
+    "atencao": "Acompanhar a evolução das condições e manter a equipe atenta a novas atualizações.",
+    "alerta": (
+        "Reforçar o monitoramento da área, verificar as informações "
+        "disponíveis e preparar a comunicação preventiva à população."
+    ),
+    "critico": (
+        "Priorizar a verificação da área e executar as medidas previstas no "
+        "plano de contingência, conforme validação da Defesa Civil."
+    ),
 }
 
 
@@ -88,4 +108,5 @@ def trend_factor(water_level_m: float, previous_water_level_m: float | None) -> 
 
 
 def recommended_action(risk_level: str) -> str:
+    """Ação OPERACIONAL (Defesa Civil / operador) para o nível informado."""
     return RECOMMENDED_ACTIONS[risk_level]

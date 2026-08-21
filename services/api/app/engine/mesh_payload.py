@@ -13,6 +13,13 @@ Portado de americas_techguard_final_poc/src/mesh_simulator.py (autoria
 própria, Pedro Zanette — ver docs/autoria-licenca.md), adaptado para
 receber RiskEvaluationResponse do motor de risco da F3 em vez do
 RiskResult/Scenario da PoC Streamlit original.
+
+PÚBLICO DO PAYLOAD: operacional. `recommended_action` aqui é a instrução à
+Defesa Civil, não um texto pronto para difusão à população — a orientação
+ao cidadão é outra camada (apps/web/src/lib/alertMessaging.ts), ainda
+demonstrativa e fora deste protocolo. `compact_payload` continua sendo só
+`FG|municipio|NIVEL|regiao`: identificação de nível e região, sem texto de
+mensagem — nenhuma mudança de protocolo foi feita nesta revisão.
 """
 
 from __future__ import annotations
@@ -52,5 +59,9 @@ def build_mesh_payload(risk: RiskEvaluationResponse, region: str, municipio: str
         timestamp=risk.timestamp or datetime.now(timezone.utc),
         source="simulation",
         implemented=False,
-        note="Camada de comunicação simulada. Não houve transmissão LoRa física.",
+        note=(
+            "Camada de comunicação simulada. Não houve transmissão LoRa física. "
+            "O campo recommended_action é a AÇÃO OPERACIONAL dirigida à Defesa "
+            "Civil — não é mensagem pronta para envio ao cidadão."
+        ),
     )

@@ -22,7 +22,8 @@ const PILLARS = [
   },
   {
     title: "Comunicação",
-    description: "Ação recomendada pronta para acionar equipe de campo.",
+    description:
+      "Ação operacional para a equipe e orientação à população — mensagens separadas, cada uma no seu público.",
   },
 ];
 

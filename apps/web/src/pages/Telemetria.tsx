@@ -11,6 +11,7 @@ import { SectionCard } from "../components/SectionCard";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
 import { TelemetryStream } from "../components/TelemetryStream";
 import { DEMO_SENSORS } from "../data/demoOperations";
 import { formatRelative } from "../lib/operations";
@@ -388,6 +389,21 @@ export function Telemetria() {
                   implemented: false
                 </span>
                 <span className="text-[11px] text-slate-500">transmissão não implementada</span>
+              </div>
+
+              {/* O campo recommended_action do payload é operacional. Sem este
+                  rótulo, o JSON cru sugere uma mensagem pronta ao cidadão —
+                  que é justamente o que ele NÃO é. */}
+              <div className="mb-3 rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
+                <p className="data-label mb-1">{OPERATIONAL_ACTION_LABEL}</p>
+                <p className="text-[11px] leading-relaxed text-slate-200">
+                  {getOperationalRecommendation(meshPayload.risk_level, meshPayload.recommended_action)}
+                </p>
+                <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
+                  Dirigida à Defesa Civil. O payload não carrega texto de mensagem à população —
+                  <code className="mx-1 text-slate-500">compact_payload</code>
+                  transporta apenas nível e região.
+                </p>
               </div>
               <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-navy-700 bg-navy-950 p-3 font-mono text-[11px] leading-relaxed text-slate-400">
                 {JSON.stringify(meshPayload, null, 2)}
