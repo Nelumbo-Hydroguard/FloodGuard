@@ -54,7 +54,7 @@ motor funcionando com dado digitado na hora).
 
 - **Objetivo da tela:** mostrar o resumo operacional que a Defesa Civil
   veria primeiro.
-- **O que mostrar:** os 4 indicadores, o card "próxima ação recomendada",
+- **O que mostrar:** os 4 indicadores, o card "próxima ação operacional recomendada",
   os 3 cards de cenário com score/fatores/explicação.
 - **Frase curta:** "Estes 3 cenários vêm do motor de risco de verdade — não
   são números fixos na tela, são recalculados a cada chamada à API."
@@ -105,8 +105,14 @@ motor funcionando com dado digitado na hora).
 ### `/alertas/critico`
 
 - **Objetivo da tela:** detalhe completo de um evento.
-- **O que mostrar:** score, confiança, justificativa, ação recomendada,
-  aviso de origem simulada, links para mapa e telemetria. O link "Ver no
+- **O que mostrar:** score, confiança, justificativa, os DOIS blocos de
+  mensagem lado a lado — "Ação operacional recomendada" (Defesa Civil) e
+  "Orientação à população" (cidadão, marcada como demonstrativa) —, aviso de
+  origem simulada, links para mapa e telemetria.
+- **Frase para os dois blocos:** "São públicos diferentes. O operador recebe
+  instrução de plantão; o cidadão recebe orientação em linguagem simples,
+  sem score nem número técnico. E nenhum dos dois textos ordena evacuação —
+  quem determina deslocamento é a Defesa Civil, não o sistema." O link "Ver no
   Mapa" leva para `/mapa?alert=critico`, que dá `flyTo` até o marcador e
   abre o popup automaticamente.
 - **Frase curta:** "Esse é o nível de detalhe que o operador veria antes de

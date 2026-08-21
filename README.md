@@ -222,9 +222,9 @@ Telas:
 
 | Rota | Consome | O que mostra |
 |---|---|---|
-| `/painel` | `GET /api/risk/status`, `GET /api/scenarios/demo` | 3 cards de risco (seguro/alerta/crítico) com score, confiança, fatores, justificativa e ação recomendada — vindos do motor real, não hardcoded |
+| `/painel` | `GET /api/risk/status`, `GET /api/scenarios/demo` | 3 cards de risco (seguro/alerta/crítico) com score, confiança, fatores, justificativa e **ação operacional recomendada** (dirigida à Defesa Civil) — vindos do motor real, não hardcoded |
 | `/mapa` | `GET /api/geo/demo-map`, `GET /api/geo/demo-points`, camadas de `/geo/*.geojson` (ou `geo/municipality` + `geo/hand-zones` quando há PostGIS) | Mapa Leaflet com zonas HAND, limite municipal e marcadores de cenário; fallback estático automático quando o banco está fora do ar |
-| `/alertas` | `GET /api/scenarios/demo` | Lista de eventos simulados (nível, região, explicação, ação recomendada, horário) derivados dos 3 cenários fixos |
+| `/alertas` | `GET /api/scenarios/demo` | Lista de eventos simulados (nível, região, explicação, ação operacional recomendada, horário) derivados dos 3 cenários fixos; o detalhe em `/alertas/:id` mostra também a prévia da **orientação à população** (demonstrativa, só frontend) |
 | `/telemetria` | `POST /api/risk/evaluate`, `POST /api/telemetry/mesh-payload` | Formulário para testar o motor de risco com valores livres; botão separado gera o payload UniMesh/LoRa simulado (`implemented: false`) |
 | `/abrigos` | — (estático, F6.2.1) | 3 abrigos **simulados** com capacidade/ocupação/status — dados fixos no frontend, sem banco e sem API; CRUD real é F7 |
 | `/sobre` | — (estático) | GovTech B2G, Defesa Civil, Blumenau/SC, HAND = suscetibilidade, motor = PoC explicável, U-RNN = roadmap |
@@ -332,7 +332,7 @@ cenários fixos no frontend. `/painel`, `/alertas` e `/mapa` usam os mesmos
 | Rota | O que mudou na F6 |
 |---|---|
 | `/sobre` | Blocos "Implementado / Simulado / Roadmap" lado a lado |
-| `/painel` | Indicadores (cenários avaliados, maior risco, confiança média, comunicação simulada) + "próxima ação recomendada" |
+| `/painel` | Indicadores (cenários avaliados, maior risco, confiança média, comunicação simulada) + "próxima ação operacional recomendada" |
 | `/telemetria` | Atalhos de cenário (seguro/alerta/crítico), payload mesh em bloco separado com selo `implemented: false` |
 | `/alertas` | Filtro por nível, região vinda da API (não mais duplicada no frontend) |
 | `/mapa` | Cartografia Leaflet real + fallback estático, nunca vazio |

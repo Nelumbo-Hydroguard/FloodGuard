@@ -7,6 +7,8 @@ import { StatusBadge } from "../components/StatusBadge";
 import { FactorBar } from "../components/FactorBar";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
+import { PublicGuidanceCard } from "../components/PublicGuidanceCard";
 
 const STATUS_LABEL: Record<string, string> = {
   simulated_monitoring: "Em monitoramento",
@@ -123,20 +125,32 @@ export function AlertDetail() {
         <p className="text-sm leading-relaxed text-slate-400">{alert.explanation}</p>
       </SectionCard>
 
-      {/* Ação recomendada com o peso visual da severidade do próprio alerta —
-          é a saída acionável da tela, não mais um bloco de texto igual aos
-          outros. */}
-      <div className="panel relative mb-6 overflow-hidden p-5">
-        <span
-          className={`absolute inset-y-0 left-0 w-[3px] ${theme.barClass}`}
-          style={{ boxShadow: `0 0 16px var(${theme.glowVar})` }}
-        />
-        <div className="pl-2">
-          <p className="data-label mb-2">Ação recomendada</p>
-          <p className="font-display text-lg font-semibold leading-snug text-white">
-            {alert.recommended_action}
-          </p>
+      {/* As duas saídas do evento, lado a lado e explicitamente rotuladas:
+          o que a EQUIPE faz e o que a POPULAÇÃO ouve. Ficarem juntas é
+          proposital — é aqui que o operador confere se a comunicação
+          preventiva bate com a decisão operacional antes de acionar. */}
+      <div className="mb-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="panel relative overflow-hidden p-5">
+          <span
+            className={`absolute inset-y-0 left-0 w-[3px] ${theme.barClass}`}
+            style={{ boxShadow: `0 0 16px var(${theme.glowVar})` }}
+          />
+          <div className="pl-2">
+            <p className="data-label mb-2">{OPERATIONAL_ACTION_LABEL}</p>
+            <p className="font-display text-lg font-semibold leading-snug text-white">
+              {getOperationalRecommendation(alert.risk_level, alert.recommended_action)}
+            </p>
+            <p className="mt-3 border-t border-navy-700/70 pt-3 text-[11px] text-slate-600">
+              Dirigida à Defesa Civil / operador.
+            </p>
+          </div>
         </div>
+
+        <PublicGuidanceCard
+          level={alert.risk_level}
+          region={alert.region}
+          timestamp={alert.timestamp}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">

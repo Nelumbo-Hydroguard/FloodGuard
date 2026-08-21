@@ -7,6 +7,7 @@ import { RiskLegend } from "../components/RiskLegend";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_LEVELS_ORDERED, RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
 
 // Rótulos legíveis para o `status` que o backend já devolve prefixado com
 // simulated_ (app/routers/alerts.py) — mantém o prefixo visível no card
@@ -51,7 +52,7 @@ export function Alertas() {
       <PageHeader
         eyebrow="Fila operacional"
         title="Alertas"
-        description="Eventos em monitoramento, com gravidade e ação recomendada."
+        description="Eventos em monitoramento, com gravidade e ação operacional recomendada."
         actions={<RiskLegend />}
       />
 
@@ -144,8 +145,10 @@ export function Alertas() {
                   <p className="mb-3 text-sm leading-relaxed text-slate-400">{alert.explanation}</p>
 
                   <div className="mb-4 rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
-                    <p className="data-label mb-1">Ação recomendada</p>
-                    <p className="text-sm leading-relaxed text-slate-200">{alert.recommended_action}</p>
+                    <p className="data-label mb-1">{OPERATIONAL_ACTION_LABEL}</p>
+                    <p className="text-sm leading-relaxed text-slate-200">
+                      {getOperationalRecommendation(alert.risk_level, alert.recommended_action)}
+                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">

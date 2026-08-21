@@ -2,6 +2,7 @@ import type { RiskEvaluationResponse } from "../lib/api";
 import { FactorBar } from "./FactorBar";
 import { StatusBadge } from "./StatusBadge";
 import { RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
 
 export function RiskCard({ title, result }: { title: string; result: RiskEvaluationResponse }) {
   const theme = RISK_THEME[result.risk_level];
@@ -59,8 +60,10 @@ export function RiskCard({ title, result }: { title: string; result: RiskEvaluat
         </p>
 
         <div className="rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
-          <p className="data-label mb-1.5">Ação recomendada</p>
-          <p className="text-sm leading-relaxed text-slate-200">{result.recommended_action}</p>
+          <p className="data-label mb-1.5">{OPERATIONAL_ACTION_LABEL}</p>
+          <p className="text-sm leading-relaxed text-slate-200">
+            {getOperationalRecommendation(result.risk_level, result.recommended_action)}
+          </p>
         </div>
       </div>
     </div>

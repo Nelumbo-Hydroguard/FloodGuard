@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { DemoAlert } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendationShort } from "../lib/alertMessaging";
 
 // Rótulos legíveis do `status` prefixado com simulated_ (mesmo dicionário
 // usado em Alertas.tsx e AlertDetail.tsx) — aqui só pra leitura humana no
@@ -55,11 +56,15 @@ export function AlertMapPopup({ alert }: { alert: DemoAlert }) {
         </div>
       </div>
 
-      <p className="mb-3 text-[11px] leading-relaxed text-slate-400">{alert.explanation}</p>
+      {/* Justificativa contida em 3 linhas: o popup é resumo operacional,
+          não a tela de detalhe. O texto inteiro está em /alertas/:id. */}
+      <p className="mb-3 text-[11px] leading-relaxed text-slate-400 line-clamp-3">{alert.explanation}</p>
 
       <div className="mb-3 rounded-lg border border-navy-700 bg-navy-950/70 p-2.5">
-        <p className="data-label mb-1">Ação recomendada</p>
-        <p className="text-[11px] leading-relaxed text-slate-200">{alert.recommended_action}</p>
+        <p className="data-label mb-1">{OPERATIONAL_ACTION_LABEL}</p>
+        <p className="text-[11px] leading-relaxed text-slate-200">
+          {getOperationalRecommendationShort(alert.risk_level)}
+        </p>
       </div>
 
       <p className="mb-2.5 border-t border-navy-700 pt-2 font-mono text-[10px] uppercase tracking-wide text-slate-600">

@@ -65,6 +65,53 @@ score de exatamente 0.25, por exemplo, classifica como `atencao`, não como
 | 0.50 ≤ score < 0.75 | `alerta` |
 | 0.75 ≤ score ≤ 1.00 | `critico` |
 
+## Mensagens: dois públicos, duas camadas
+
+O motor atende **operador**, não cidadão. Confundir os dois foi um problema
+real: até esta revisão existia uma única frase por nível, exibida em toda
+tela sob o rótulo genérico "Ação recomendada", e o texto do nível crítico
+dizia *"considerar evacuação preventiva"* — ou seja, o motor decidindo
+evacuação sozinho. O FloodGuard não tem essa autoridade.
+
+### 1. Ação operacional recomendada (Defesa Civil / operador)
+
+Vem do motor, no campo `recommended_action` do contrato de API
+(`risk_rules.RECOMMENDED_ACTIONS`). É instrução de plantão.
+
+| Nível | Ação operacional |
+|---|---|
+| `seguro` | Manter o acompanhamento da região e das fontes oficiais. |
+| `atencao` | Acompanhar a evolução das condições e manter a equipe atenta a novas atualizações. |
+| `alerta` | Reforçar o monitoramento da área, verificar as informações disponíveis e preparar a comunicação preventiva à população. |
+| `critico` | Priorizar a verificação da área e executar as medidas previstas no plano de contingência, conforme validação da Defesa Civil. |
+
+Na UI o rótulo é sempre **"Ação operacional recomendada"** — nunca "Ação
+recomendada" sozinha, que apaga o público-alvo.
+
+### 2. Orientação à população (cidadão)
+
+**Só no frontend**, em `apps/web/src/lib/alertMessaging.ts`
+(`getPublicGuidance`). Não trafega por esta API nesta fase: é conteúdo
+**demonstrativo do protótipo**, não um alerta oficial, e não valia inventar
+contrato novo para uma camada ainda ilustrativa. Linguagem de cidadão, sem
+score, confiança, HAND, pesos, fórmula ou payload.
+
+| Nível | Orientação à população |
+|---|---|
+| `seguro` | Nenhum alerta ativo para esta região. Continue acompanhando os canais oficiais da Defesa Civil. |
+| `atencao` | Condições exigem atenção na região. Acompanhe as atualizações da Defesa Civil e evite áreas com sinais de alagamento. |
+| `alerta` | Atenção para condições de risco na região. Evite áreas alagadas, acompanhe as orientações da Defesa Civil e consulte os locais seguros próximos. |
+| `critico` | Situação crítica na região. Siga as orientações da Defesa Civil, não atravesse áreas alagadas e, caso seja determinado o deslocamento, utilize o local seguro indicado. |
+
+### Regra de autoridade
+
+Nenhuma das duas camadas ordena evacuação, promete segurança ou substitui a
+Defesa Civil. No nível crítico, o operacional aponta o plano de contingência
+"conforme validação da Defesa Civil" e o texto ao cidadão trata o
+deslocamento como condicional ("caso seja determinado"). Isso é testado em
+`tests/test_alert_messaging.py` e em
+`apps/web/src/lib/__tests__/alertMessaging.test.ts`.
+
 ## Fallback sem HAND
 
 Se nem `hand_risk_weight`/`hand_class_id` nem `region` (lookup mockado)
@@ -107,7 +154,7 @@ Entrada: `hand_class_id=0, hand_risk_weight=0.9, rainfall_mm=140, water_level_m=
   "spatial_context_available": true,
   "factors": {"hand_weight": 0.9, "rainfall_factor": 0.9333, "water_level_factor": 0.9333, "trend_factor": 1.0},
   "explanation": "A região apresenta alta suscetibilidade, chuva acumulada elevada e nível d'água elevado e em crescimento, resultando em risco critico.",
-  "recommended_action": "Acionar protocolo de emergência da Defesa Civil e considerar evacuação preventiva."
+  "recommended_action": "Priorizar a verificação da área e executar as medidas previstas no plano de contingência, conforme validação da Defesa Civil."
 }
 ```
 
@@ -123,7 +170,7 @@ Entrada: `hand_class_id=3, hand_risk_weight=0.1, rainfall_mm=5, water_level_m=0.
   "spatial_context_available": true,
   "factors": {"hand_weight": 0.1, "rainfall_factor": 0.0333, "water_level_factor": 0.1, "trend_factor": 0.5},
   "explanation": "A região apresenta muito baixa suscetibilidade, chuva acumulada baixa e nível d'água baixo e estável, resultando em risco seguro.",
-  "recommended_action": "Nenhuma ação necessária. Manter monitoramento de rotina."
+  "recommended_action": "Manter o acompanhamento da região e das fontes oficiais."
 }
 ```
 
@@ -162,6 +209,11 @@ unitários em `services/api/tests/test_risk_engine.py`.
 já calculado num payload compacto — **sem** rádio, socket ou porta serial.
 `implemented` é sempre `false` e `source` é sempre `"simulation"`, mesmo em
 risco crítico (testado explicitamente em `test_mesh_payload.py`).
+
+O `recommended_action` que viaja no payload é o texto **operacional** — não
+é mensagem pronta para difusão à população. O `compact_payload`
+(`FG|municipio|NIVEL|regiao`) transporta só identificação de nível e região,
+sem texto de mensagem: **o protocolo não mudou** nesta revisão.
 
 ## Limitações
 

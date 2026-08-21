@@ -91,7 +91,7 @@ export function Sobre() {
             <li>O motor busca o contexto espacial (classe HAND) do ponto.</li>
             <li>Os quatro fatores são normalizados e combinados num score de 0 a 100%.</li>
             <li>O score cai numa faixa e vira nível: seguro, atenção, alerta ou crítico.</li>
-            <li>O motor devolve score, confiança, fatores, justificativa e ação recomendada.</li>
+            <li>O motor devolve score, confiança, fatores, justificativa e ação operacional recomendada.</li>
             <li>
               O resultado alimenta o{" "}
               <Link to="/painel" className="text-accent underline-offset-2 hover:underline">painel</Link>,
@@ -146,8 +146,17 @@ export function Sobre() {
           <p className={P}>
             O motor combina <strong className={STRONG}>HAND, chuva acumulada, nível d'água e
             tendência</strong> numa fórmula transparente e auditável. Toda avaliação vem com
-            decomposição por fator, justificativa textual e ação recomendada — o operador vê de
-            onde o score veio, não só o número.
+            decomposição por fator, justificativa textual e ação operacional recomendada — o
+            operador vê de onde o score veio, não só o número.
+          </p>
+          <p className={`${P} mt-3`}>
+            A <strong className={STRONG}>ação operacional recomendada</strong> é dirigida à Defesa
+            Civil: é o que a equipe de plantão faz agora. Ela nunca determina evacuação — no nível
+            crítico o motor aponta o plano de contingência e devolve a decisão a quem tem
+            autoridade para tomá-la. A <strong className={STRONG}>orientação à população</strong> é
+            uma camada separada, em linguagem de cidadão, sem score nem número técnico, e é{" "}
+            <strong className={STRONG}>conteúdo demonstrativo do protótipo</strong> — não um alerta
+            oficial.
           </p>
           <p className={`${P} mt-3`}>
             Os limiares de faixa (0.25 / 0.50 / 0.75) e os pesos de normalização são{" "}
@@ -202,7 +211,9 @@ export function Sobre() {
             são derivados do motor de risco sobre cenários fixos e não têm persistência em banco. São
             eventos de demonstração — <strong className={STRONG}>não são alertas oficiais emitidos
             pela Defesa Civil</strong>. Cada um traz gravidade, score, confiança, justificativa e
-            ação recomendada, e liga direto para o ponto correspondente no mapa.
+            ação operacional recomendada, e liga direto para o ponto correspondente no mapa. O
+            detalhe de cada alerta mostra, lado a lado, a ação operacional (equipe) e a prévia da
+            orientação à população (cidadão) — são mensagens diferentes para públicos diferentes.
           </p>
         </Section>
 

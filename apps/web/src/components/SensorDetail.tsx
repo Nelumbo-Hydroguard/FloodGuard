@@ -1,6 +1,7 @@
 import type { DemoSensor } from "../data/demoOperations";
 import type { RiskEvaluationResponse } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
+import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
 import { formatClock } from "../lib/operations";
 import { Drawer } from "./Drawer";
 import { FactorBar } from "./FactorBar";
@@ -108,8 +109,10 @@ export function SensorDetail({
       </div>
 
       <div className="rounded-lg border border-navy-700/70 bg-navy-950/60 p-3">
-        <p className="data-label mb-1.5">Ação recomendada</p>
-        <p className="text-sm leading-relaxed text-slate-200">{result.recommended_action}</p>
+        <p className="data-label mb-1.5">{OPERATIONAL_ACTION_LABEL}</p>
+        <p className="text-sm leading-relaxed text-slate-200">
+          {getOperationalRecommendation(result.risk_level, result.recommended_action)}
+        </p>
       </div>
     </Drawer>
   );

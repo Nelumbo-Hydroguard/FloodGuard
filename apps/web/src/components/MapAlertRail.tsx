@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { DemoAlert } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
+import { getOperationalRecommendationShort } from "../lib/alertMessaging";
 
 /**
  * Trilha de alertas sobreposta ao mapa.
@@ -59,8 +60,10 @@ export function MapAlertRail({
                 <span className="mt-0.5 block truncate text-[11px] text-slate-400">
                   {alert.region ?? "região não informada"}
                 </span>
+                {/* Ação CURTA: a frase operacional completa era cortada pelo
+                    line-clamp justamente na parte que a qualifica. */}
                 <span className="mt-1 block text-[11px] leading-snug text-slate-500 line-clamp-2">
-                  {alert.recommended_action}
+                  {getOperationalRecommendationShort(alert.risk_level)}
                 </span>
               </span>
             </button>
