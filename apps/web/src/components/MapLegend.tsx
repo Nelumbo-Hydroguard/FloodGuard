@@ -1,4 +1,6 @@
 import { RISK_THEME } from "../lib/riskTheme";
+import { showsTechnicalDetail } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 /**
  * Legenda sobreposta ao mapa.
@@ -29,8 +31,11 @@ function LegendGroup({ title, children }: { title: string; children: React.React
 }
 
 export function MapLegend() {
+  const { role } = useRole();
+  const technical = showsTechnicalDetail(role);
+
   return (
-    <div className="panel-glass absolute bottom-6 left-6 z-[1000] w-[228px] animate-rise-in p-4">
+    <div className="panel-glass absolute bottom-6 left-6 z-[1000] hidden w-[228px] animate-rise-in p-4 sm:block">
       <div className="flex flex-col gap-4">
         <LegendGroup title="Suscetibilidade HAND">
           {/* Escala contínua em vez de 4 quadradinhos soltos: HAND é um
@@ -58,15 +63,21 @@ export function MapLegend() {
             Abrigos
           </span>
           {/* Cada camada tem forma própria — com quatro ligadas ao mesmo
-              tempo, cor sozinha não separa nada (F11). */}
-          <span className="flex items-center gap-2 text-[11px] text-slate-300">
-            <span className="h-2 w-2 shrink-0 bg-[#a78bfa]" />
-            Sensores
-          </span>
-          <span className="flex items-center gap-2 text-[11px] text-slate-300">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#f472b6]" />
-            Pedidos SOS
-          </span>
+              tempo, cor sozinha não separa nada (F11). Sensores e pedidos SOS
+              só existem no mapa da operação, então a legenda pública não
+              anuncia camadas que aquele perfil não pode ligar (F11.2). */}
+          {technical && (
+            <>
+              <span className="flex items-center gap-2 text-[11px] text-slate-300">
+                <span className="h-2 w-2 shrink-0 bg-[#a78bfa]" />
+                Sensores
+              </span>
+              <span className="flex items-center gap-2 text-[11px] text-slate-300">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#f472b6]" />
+                Pedidos SOS
+              </span>
+            </>
+          )}
         </LegendGroup>
 
         <LegendGroup title="Alertas">

@@ -20,7 +20,14 @@ import { alertIcon, sensorIcon, shelterIcon, sosIcon } from "../lib/mapMarkers";
 import { DEMO_SENSORS } from "../data/demoOperations";
 import { SOS_STATUS_STYLE, formatClock, waterLevelLabel } from "../lib/operations";
 import { useOperations } from "../state/OperationsProvider";
-import { DEFAULT_LAYERS, MapLayerControl, type MapLayers } from "../components/MapLayerControl";
+import {
+  DEFAULT_LAYERS,
+  MapLayerControl,
+  PUBLIC_LAYER_KEYS,
+  type MapLayers,
+} from "../components/MapLayerControl";
+import { isOperator } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 import { PageHeader } from "../components/PageHeader";
 import { MapLegend } from "../components/MapLegend";
 import { MapAlertRail } from "../components/MapAlertRail";
@@ -86,6 +93,7 @@ export function RiskMap() {
   const focusAlertId = searchParams.get("alert");
   const focusSosId = searchParams.get("sos");
   const { sosRequests } = useOperations();
+  const { role } = useRole();
 
   const [demoMap, setDemoMap] = useState<DemoMapResponse | null>(null);
   const [alerts, setAlerts] = useState<DemoAlert[] | null>(null);
@@ -105,13 +113,33 @@ export function RiskMap() {
     focusSosId ? { ...DEFAULT_LAYERS, sos: true } : DEFAULT_LAYERS,
   );
 
+  /**
+   * Camadas efetivamente desenhadas.
+   *
+   * Fora da operação, sensores e pedidos SOS ficam desligados na origem — não
+   * apenas escondidos do controle. Se dependesse só do controle, um `?sos=`
+   * na URL (ou um perfil trocado com a camada já ligada) continuaria plotando
+   * a posição de quem pediu ajuda para um visitante. A restrição precisa
+   * valer no render, não no menu (F11.2).
+   */
+  const operational = isOperator(role);
+  const visibleLayers: MapLayers = operational
+    ? layers
+    : { ...layers, sensores: false, sos: false };
+
   const focusedAlert = useMemo(
     () => (focusAlertId ? (alerts ?? []).find((alert) => alert.id === focusAlertId) ?? null : null),
     [focusAlertId, alerts],
   );
+  // `?sos=` é entrada da operação. Fora dela o alvo é ignorado — sem isso, a
+  // URL levaria um visitante a voar até a coordenada de um pedido de ajuda
+  // mesmo com a camada desligada.
   const focusedSos = useMemo(
-    () => (focusSosId ? sosRequests.find((request) => request.id === focusSosId) ?? null : null),
-    [focusSosId, sosRequests],
+    () =>
+      focusSosId && operational
+        ? sosRequests.find((request) => request.id === focusSosId) ?? null
+        : null,
+    [focusSosId, sosRequests, operational],
   );
 
   useEffect(() => {
@@ -258,7 +286,7 @@ export function RiskMap() {
             />
           )}
 
-          {layers.alertas &&
+          {visibleLayers.alertas &&
             alerts?.map((alert) => (
             <Marker
               key={alert.id}
@@ -284,7 +312,7 @@ export function RiskMap() {
           />
           <MapFocus target={focusedSos ?? null} markerRefs={sosMarkerRefs} />
 
-          {layers.sensores &&
+          {visibleLayers.sensores &&
             DEMO_SENSORS.map((sensor) => (
               <Marker
                 key={sensor.id}
@@ -314,7 +342,7 @@ export function RiskMap() {
               </Marker>
             ))}
 
-          {layers.sos &&
+          {visibleLayers.sos &&
             sosRequests.map((request) => (
               <Marker
                 key={request.id}
@@ -358,7 +386,7 @@ export function RiskMap() {
               </Marker>
             ))}
 
-          {layers.abrigos &&
+          {visibleLayers.abrigos &&
             shelters?.map((shelter) => (
             <Marker key={shelter.id} position={[shelter.latitude, shelter.longitude]} icon={shelterIcon()}>
               <Popup>
@@ -378,7 +406,9 @@ export function RiskMap() {
 
         {/* ── HUD ───────────────────────────────────────────────────────── */}
 
-        <div className="panel-glass absolute left-6 top-6 z-[1000] max-w-[340px] animate-rise-in p-4">
+        {/* No telefone o título sai: a nav do header já diz "Mapa" e o
+            espaço pertence ao mapa e à trilha de alertas (F11.2). */}
+        <div className="panel-glass absolute left-6 top-6 z-[1000] hidden max-w-[340px] animate-rise-in p-4 sm:block">
           <p className="data-label text-accent/80">Blumenau/SC</p>
           <h1 className="mt-1.5 font-display text-xl font-bold leading-tight text-white">
             Mapa de risco
@@ -416,8 +446,9 @@ export function RiskMap() {
         <MapLegend />
 
         <MapLayerControl
-          layers={layers}
+          layers={visibleLayers}
           onChange={setLayers}
+          availableKeys={operational ? undefined : PUBLIC_LAYER_KEYS}
           counts={{
             alertas: alerts?.length ?? 0,
             abrigos: shelters?.length ?? 0,

@@ -8,6 +8,9 @@ import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
 import { RISK_LEVELS_ORDERED, RISK_THEME } from "../lib/riskTheme";
 import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
+import { PublicGuidanceCard } from "../components/PublicGuidanceCard";
+import { showsTechnicalDetail } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 // Rótulos legíveis para o `status` que o backend já devolve prefixado com
 // simulated_ (app/routers/alerts.py) — mantém o prefixo visível no card
@@ -22,6 +25,8 @@ const STATUS_LABEL: Record<string, string> = {
 const ACTIVE_STATUSES = new Set(["simulated_active", "simulated_critical"]);
 
 export function Alertas() {
+  const { role } = useRole();
+  const technical = showsTechnicalDetail(role);
   const [alerts, setAlerts] = useState<DemoAlert[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState<RiskLevel | "todos">("todos");
@@ -36,7 +41,7 @@ export function Alertas() {
   if (error) {
     return (
       <div>
-        <PageHeader eyebrow="Fila operacional" title="Alertas" />
+        <PageHeader eyebrow={technical ? "Fila operacional" : "Situação da região"} title="Alertas" />
         <ErrorState message={error} />
       </div>
     );
@@ -50,9 +55,13 @@ export function Alertas() {
   return (
     <div>
       <PageHeader
-        eyebrow="Fila operacional"
+        eyebrow={technical ? "Fila operacional" : "Situação da região"}
         title="Alertas"
-        description="Eventos em monitoramento, com gravidade e ação operacional recomendada."
+        description={
+          technical
+            ? "Eventos em monitoramento, com gravidade e ação operacional recomendada."
+            : "O que está acontecendo nas regiões monitoradas e o que fazer em cada caso."
+        }
         actions={<RiskLegend />}
       />
 
@@ -106,7 +115,39 @@ export function Alertas() {
       )}
 
       <div className="flex flex-col gap-4">
-        {visible.map((alert) => {
+        {/* Cidadão e visitante recebem a MESMA informação em outra língua:
+            nível, lugar, hora, o que está acontecendo e o que fazer — sem
+            score, confiança ou fatores, que não ajudam quem só precisa
+            decidir se sai de casa (F11.2). O texto vem inteiro do helper
+            central da F11.1; nenhuma frase nova nasce aqui. */}
+        {!technical &&
+          visible.map((alert) => (
+            <PublicGuidanceCard
+              key={alert.id}
+              level={alert.risk_level}
+              region={alert.region}
+              timestamp={alert.timestamp}
+              actions={
+                <>
+                  <Link
+                    to={`/mapa?alert=${alert.id}`}
+                    className="inline-flex items-center rounded-lg border border-accent/40 bg-accent/10 px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+                  >
+                    Ver no mapa →
+                  </Link>
+                  <Link
+                    to="/abrigos"
+                    className="inline-flex items-center rounded-lg border border-navy-600 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
+                  >
+                    Ver locais seguros
+                  </Link>
+                </>
+              }
+            />
+          ))}
+
+        {technical &&
+          visible.map((alert) => {
           const theme = RISK_THEME[alert.risk_level];
           return (
             <article key={alert.id} className="panel panel-interactive overflow-hidden">
@@ -169,7 +210,7 @@ export function Alertas() {
               </div>
             </article>
           );
-        })}
+          })}
       </div>
     </div>
   );

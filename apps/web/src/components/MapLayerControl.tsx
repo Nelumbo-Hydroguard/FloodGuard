@@ -44,23 +44,36 @@ const ITEMS: Array<{ key: keyof MapLayers; label: string; swatch: React.ReactNod
   },
 ];
 
+/** Camadas que o público geral enxerga — sem sensor nem pedido de terceiros. */
+export const PUBLIC_LAYER_KEYS: Array<keyof MapLayers> = ["alertas", "abrigos"];
+
 export function MapLayerControl({
   layers,
   onChange,
   counts,
+  /**
+   * Restringe quais camadas aparecem no controle. Visitante e cidadão veem
+   * só alertas e abrigos: sensores são instrumentação interna e os pedidos
+   * SOS são de outras pessoas — expor a posição de quem pediu ajuda a
+   * qualquer visitante seria errado mesmo numa demo com dados fictícios.
+   */
+  availableKeys,
 }: {
   layers: MapLayers;
   onChange: (layers: MapLayers) => void;
   counts: Partial<Record<keyof MapLayers, number>>;
+  availableKeys?: Array<keyof MapLayers>;
 }) {
+  const items = availableKeys ? ITEMS.filter((item) => availableKeys.includes(item.key)) : ITEMS;
+
   return (
     /* bottom-[92px]: o ZoomControl do Leaflet vive no canto inferior direito
        (RiskMap.tsx). Empilhar acima dele mantém os controles do mapa juntos
        sem cobrir o zoom. */
-    <div className="panel-glass absolute right-6 bottom-[92px] z-[1000] w-[204px] animate-rise-in p-4">
+    <div className="panel-glass absolute right-6 bottom-[92px] z-[1000] hidden w-[204px] animate-rise-in p-4 sm:block">
       <p className="data-label mb-2.5">Camadas</p>
       <div className="flex flex-col gap-1">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const checked = layers[item.key];
           return (
             <label

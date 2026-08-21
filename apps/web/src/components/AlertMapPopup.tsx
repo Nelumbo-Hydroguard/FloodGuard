@@ -1,7 +1,16 @@
 import { Link } from "react-router-dom";
 import type { DemoAlert } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
-import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendationShort } from "../lib/alertMessaging";
+import {
+  OPERATIONAL_ACTION_LABEL,
+  PUBLIC_GUIDANCE_LABEL,
+  getOperationalRecommendationShort,
+  getPublicGuidance,
+  getPublicHeadline,
+  getPublicLevelLabel,
+} from "../lib/alertMessaging";
+import { showsTechnicalDetail } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 // Rótulos legíveis do `status` prefixado com simulated_ (mesmo dicionário
 // usado em Alertas.tsx e AlertDetail.tsx) — aqui só pra leitura humana no
@@ -25,6 +34,8 @@ const STATUS_LABEL: Record<string, string> = {
  * popup do Leaflet era branco e este card era escrito para fundo claro.
  */
 export function AlertMapPopup({ alert }: { alert: DemoAlert }) {
+  const { role } = useRole();
+  const technical = showsTechnicalDetail(role);
   const theme = RISK_THEME[alert.risk_level];
 
   return (
@@ -34,36 +45,50 @@ export function AlertMapPopup({ alert }: { alert: DemoAlert }) {
           className={`h-2 w-2 shrink-0 rounded-full ${theme.dotClass}`}
           style={{ boxShadow: `0 0 8px var(${theme.glowVar})` }}
         />
-        <strong className="text-[13px] font-semibold text-white">{alert.title}</strong>
+        <strong className="text-[13px] font-semibold text-white">
+          {technical ? alert.title : getPublicLevelLabel(alert.risk_level)}
+        </strong>
       </div>
 
       <p className="mb-3 text-[11px] text-slate-500">
-        {alert.region ?? "região não informada"} · {STATUS_LABEL[alert.status] ?? alert.status}
+        {alert.region ?? "região não informada"}
+        {technical && <> · {STATUS_LABEL[alert.status] ?? alert.status}</>}
       </p>
 
-      <div className="mb-3 flex gap-4">
-        <div>
-          <p className="data-label">Score</p>
-          <p className={`font-mono text-lg font-semibold leading-tight ${theme.textClass}`}>
-            {Math.round(alert.risk_score * 100)}%
-          </p>
+      {/* Score e confiança são leitura de operação. No popup público eles
+          apareceriam sem a decomposição que os torna interpretáveis, e um
+          "63%" solto sugere precisão que a PoC não tem (F11.2). */}
+      {technical && (
+        <div className="mb-3 flex gap-4">
+          <div>
+            <p className="data-label">Score</p>
+            <p className={`font-mono text-lg font-semibold leading-tight ${theme.textClass}`}>
+              {Math.round(alert.risk_score * 100)}%
+            </p>
+          </div>
+          <div>
+            <p className="data-label">Confiança</p>
+            <p className="font-mono text-lg font-semibold leading-tight text-slate-300">
+              {Math.round(alert.confidence * 100)}%
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="data-label">Confiança</p>
-          <p className="font-mono text-lg font-semibold leading-tight text-slate-300">
-            {Math.round(alert.confidence * 100)}%
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Justificativa contida em 3 linhas: o popup é resumo operacional,
           não a tela de detalhe. O texto inteiro está em /alertas/:id. */}
-      <p className="mb-3 text-[11px] leading-relaxed text-slate-400 line-clamp-3">{alert.explanation}</p>
+      <p className="mb-3 text-[11px] leading-relaxed text-slate-400 line-clamp-3">
+        {technical ? alert.explanation : getPublicHeadline(alert.risk_level)}
+      </p>
 
       <div className="mb-3 rounded-lg border border-navy-700 bg-navy-950/70 p-2.5">
-        <p className="data-label mb-1">{OPERATIONAL_ACTION_LABEL}</p>
+        <p className="data-label mb-1">
+          {technical ? OPERATIONAL_ACTION_LABEL : PUBLIC_GUIDANCE_LABEL}
+        </p>
         <p className="text-[11px] leading-relaxed text-slate-200">
-          {getOperationalRecommendationShort(alert.risk_level)}
+          {technical
+            ? getOperationalRecommendationShort(alert.risk_level)
+            : getPublicGuidance(alert.risk_level)}
         </p>
       </div>
 
@@ -78,12 +103,21 @@ export function AlertMapPopup({ alert }: { alert: DemoAlert }) {
         >
           Ver detalhes →
         </Link>
-        {alert.suggested_next_step && (
+        {technical ? (
+          alert.suggested_next_step && (
+            <Link
+              to={alert.suggested_next_step}
+              className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              Testar em Telemetria →
+            </Link>
+          )
+        ) : (
           <Link
-            to={alert.suggested_next_step}
+            to="/abrigos"
             className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
           >
-            Testar em Telemetria →
+            Locais seguros →
           </Link>
         )}
       </div>

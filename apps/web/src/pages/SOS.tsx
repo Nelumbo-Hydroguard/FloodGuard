@@ -5,9 +5,11 @@ import { PageHeader } from "../components/PageHeader";
 import { SectionCard } from "../components/SectionCard";
 import { SOSForm } from "../components/SOSForm";
 import { SOSRequestCard } from "../components/SOSRequestCard";
-import { SessionNote } from "../components/DemoBadge";
+import { DemoBadge, SessionNote } from "../components/DemoBadge";
 import { useOperations } from "../state/OperationsProvider";
 import { SESSION_NOTICE } from "../state/OperationsProvider";
+import { useRole } from "../state/RoleProvider";
+import { isOperator } from "../lib/roleAccess";
 import { sortSosQueue } from "../lib/operations";
 
 /**
@@ -23,25 +25,76 @@ const RECENT_LIMIT = 5;
 
 export function SOS() {
   const { sosRequests } = useOperations();
+  const { role } = useRole();
   const [submitted, setSubmitted] = useState<SosRequest | null>(null);
 
   const recent = sortSosQueue(sosRequests).slice(0, RECENT_LIMIT);
+
+  // A Defesa Civil não envia pedido — ela atende. Mostrar o formulário aqui
+  // convidaria o operador a abrir uma ocorrência em nome de terceiros, que é
+  // outro fluxo (e não existe). A porta certa é a central (F11.2).
+  if (isOperator(role)) {
+    const waiting = sosRequests.filter((request) => request.status === "aguardando").length;
+    return (
+      <div className="max-w-xl py-6">
+        <section className="panel p-7">
+          <p className="data-label mb-4">Experiência de cidadão</p>
+          <h1 className="font-display text-xl font-semibold leading-snug text-white">
+            O envio de pedido pertence à experiência do cidadão.
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+            No perfil da Defesa Civil, os pedidos chegam já na fila de triagem da central de
+            operação — com protocolo, localização e situação informada.
+            {waiting > 0 && (
+              <>
+                {" "}
+                Há{" "}
+                <strong className="text-risk-attention">
+                  {waiting} {waiting === 1 ? "pedido aguardando" : "pedidos aguardando"}
+                </strong>{" "}
+                atendimento.
+              </>
+            )}
+          </p>
+
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <Link
+              to="/operacao"
+              className="rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-semibold text-navy-950 shadow-[0_0_20px_var(--glow-accent)] transition-colors hover:bg-accent/90"
+            >
+              Ir para a central de operação
+            </Link>
+            <Link
+              to="/mapa"
+              className="rounded-lg border border-navy-600 px-4 py-2.5 text-center text-sm font-semibold text-slate-300 transition-colors hover:border-accent hover:text-accent"
+            >
+              Voltar ao mapa
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         eyebrow="Pedido de ajuda"
         title="SOS"
-        description="Informe sua situação e localização. O pedido entra na fila de triagem da operação."
-        actions={
-          <Link
-            to="/operacao"
-            className="rounded-lg border border-navy-600 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-accent hover:text-accent"
-          >
-            Central de operação →
-          </Link>
-        }
+        description="Informe sua situação e localização. O pedido entra na fila de triagem desta demonstração."
+        actions={<DemoBadge label="simulado" />}
       />
+
+      {/* Aviso acima da dobra, não só depois de enviar: quem chega nesta tela
+          precisa saber ANTES de preencher que o pedido não aciona ninguém.
+          Depois do envio já seria tarde para a informação importar. */}
+      <div className="mb-6 rounded-xl border border-risk-attention/30 bg-risk-attention/[0.06] px-4 py-3">
+        <p className="text-xs leading-relaxed text-slate-300">
+          <strong className="text-risk-attention">Demonstração</strong> — este formulário simula o
+          fluxo de pedido de ajuda. Nada é enviado à Defesa Civil e nenhum atendimento é acionado.
+          Em uma emergência real, procure a Defesa Civil (199) ou os Bombeiros (193).
+        </p>
+      </div>
 
       {submitted && (
         <div className="panel relative mb-6 overflow-hidden p-5">

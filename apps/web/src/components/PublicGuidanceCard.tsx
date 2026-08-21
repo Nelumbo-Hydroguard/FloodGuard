@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { RiskLevel } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
@@ -31,10 +32,17 @@ export function PublicGuidanceCard({
   level,
   region,
   timestamp,
+  actions,
 }: {
   level: RiskLevel | string;
   region: string | null;
   timestamp: string;
+  /**
+   * Substitui o CTA padrão ("Ver local seguro"). Usado na lista de alertas
+   * do cidadão, onde cada evento precisa também de "Ver no mapa" apontando
+   * para o próprio id — o card em si não conhece o alerta, só a mensagem.
+   */
+  actions?: ReactNode;
 }) {
   const theme = isRiskLevel(level) ? RISK_THEME[level] : null;
 
@@ -70,13 +78,17 @@ export function PublicGuidanceCard({
           <p className="text-sm leading-relaxed text-slate-200">{getPublicGuidance(level)}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-navy-700/70 pt-4">
-          <Link
-            to="/abrigos"
-            className="inline-flex items-center rounded-lg border border-accent/40 bg-accent/10 px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
-          >
-            Ver local seguro →
-          </Link>
+        <div className="flex flex-col gap-3 border-t border-navy-700/70 pt-4">
+          <div className="flex flex-wrap gap-2">
+            {actions ?? (
+              <Link
+                to="/abrigos"
+                className="inline-flex items-center rounded-lg border border-accent/40 bg-accent/10 px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+              >
+                Ver local seguro →
+              </Link>
+            )}
+          </div>
           <p className="text-[11px] leading-relaxed text-slate-600">{PUBLIC_GUIDANCE_DISCLAIMER}</p>
         </div>
       </div>

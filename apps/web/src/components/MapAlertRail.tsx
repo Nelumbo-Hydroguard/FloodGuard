@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import type { DemoAlert } from "../lib/api";
 import { RISK_THEME } from "../lib/riskTheme";
-import { getOperationalRecommendationShort } from "../lib/alertMessaging";
+import { getOperationalRecommendationShort, getPublicHeadline } from "../lib/alertMessaging";
+import { showsTechnicalDetail } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 /**
  * Trilha de alertas sobreposta ao mapa.
@@ -21,10 +23,18 @@ export function MapAlertRail({
   activeId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { role } = useRole();
+  const technical = showsTechnicalDetail(role);
+
   if (!alerts || alerts.length === 0) return null;
 
   return (
-    <aside className="panel-glass absolute right-6 top-6 z-[1000] flex max-h-[calc(100%-3rem)] w-[288px] animate-rise-in flex-col overflow-hidden">
+    /* No telefone a trilha vira folha inferior: com quatro painéis flutuantes
+       de largura fixa, 390px de viewport não comporta HUD de canto — eles se
+       sobrepunham e cortavam uns aos outros. Aqui a trilha é o único painel
+       que sobrevive no mobile, porque é o que responde "o que está
+       acontecendo perto de mim" (F11.2). */
+    <aside className="panel-glass absolute inset-x-3 bottom-3 z-[1000] flex max-h-[40vh] animate-rise-in flex-col overflow-hidden sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-6 sm:max-h-[calc(100%-3rem)] sm:w-[288px]">
       <div className="flex items-center justify-between gap-2 border-b border-navy-700/70 px-4 py-3">
         <p className="data-label">Alertas</p>
         <span className="rounded-full border border-navy-600 px-2 py-0.5 font-mono text-[10px] text-slate-400">
@@ -53,17 +63,24 @@ export function MapAlertRail({
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`text-xs font-semibold ${theme.textClass}`}>{theme.label}</span>
-                  <span className="font-mono text-[11px] text-slate-400">
-                    {Math.round(alert.risk_score * 100)}%
-                  </span>
+                  {/* Score só para quem opera: na trilha pública o número
+                      apareceria sem a decomposição que o explica (F11.2). */}
+                  {technical && (
+                    <span className="font-mono text-[11px] text-slate-400">
+                      {Math.round(alert.risk_score * 100)}%
+                    </span>
+                  )}
                 </span>
                 <span className="mt-0.5 block truncate text-[11px] text-slate-400">
                   {alert.region ?? "região não informada"}
                 </span>
                 {/* Ação CURTA: a frase operacional completa era cortada pelo
-                    line-clamp justamente na parte que a qualifica. */}
+                    line-clamp justamente na parte que a qualifica. Para o
+                    público, a linha é a situação — não a instrução de plantão. */}
                 <span className="mt-1 block text-[11px] leading-snug text-slate-500 line-clamp-2">
-                  {getOperationalRecommendationShort(alert.risk_level)}
+                  {technical
+                    ? getOperationalRecommendationShort(alert.risk_level)
+                    : getPublicHeadline(alert.risk_level)}
                 </span>
               </span>
             </button>

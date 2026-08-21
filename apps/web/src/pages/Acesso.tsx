@@ -1,103 +1,131 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { SessionNote } from "../components/DemoBadge";
+import {
+  HOME_BY_ROLE,
+  ROLES,
+  ROLE_DEMO_NOTICE,
+  ROLE_LABEL,
+  ROLE_SUMMARY,
+  type Role,
+} from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 /**
- * `/acesso` — escolha de contexto, NÃO tela de login.
+ * `/acesso` — escolha de EXPERIÊNCIA, não tela de login.
  *
  * A plataforma não tem autenticação. Desenhar um formulário de usuário e
  * senha aqui simularia um controle de acesso inexistente — é o tipo de
  * detalhe que vende bem numa demo e mente sobre o produto. Então a tela
- * apresenta os dois contextos de uso (operação e cidadão), diz em letras
- * claras que a autenticação não está habilitada, e entra direto.
+ * apresenta os três perfis de demonstração, diz em letras claras que a
+ * autenticação não está habilitada, e entra direto.
+ *
+ * Desde a F11.2 esta tela *define* o perfil ativo, em vez de só apontar
+ * links: era estranho a tela chamada "Acesso" ser a única que não mudava
+ * nada. O mesmo perfil pode ser trocado a qualquer momento no header.
  *
  * Quando houver autenticação de verdade, esta é a rota que ganha o formulário.
  */
 
-const CONTEXTS = [
-  {
-    to: "/painel",
-    eyebrow: "Acesso operacional",
-    title: "Defesa Civil / operador",
-    description: "Painel, mapa, alertas, telemetria, central de atendimento e abrigos.",
-    cta: "Entrar na demonstração",
-    primary: true,
-    links: [
-      { to: "/operacao", label: "Central de operação" },
-      { to: "/telemetria", label: "Telemetria" },
-    ],
+const DETAIL: Record<Role, { eyebrow: string; entry: string; highlights: string[] }> = {
+  visitor: {
+    eyebrow: "Acesso público",
+    entry: "Sem identificação",
+    highlights: ["Mapa de risco", "Alertas da região", "Locais seguros"],
   },
-  {
-    to: "/sos",
+  citizen: {
     eyebrow: "Acesso cidadão",
-    title: "Serviços públicos do FloodGuard",
-    description: "Enviar pedido de ajuda, consultar alertas e encontrar um local seguro.",
-    cta: "Entrar na demonstração",
-    primary: false,
-    links: [
-      { to: "/abrigos", label: "Locais seguros" },
-      { to: "/alertas", label: "Alertas" },
-    ],
+    entry: "Cidadão cadastrado",
+    highlights: ["Tudo do visitante", "Pedido de ajuda (SOS)", "Acompanhamento do protocolo"],
   },
-];
+  civil_defense: {
+    eyebrow: "Acesso operacional",
+    entry: "Defesa Civil / operador",
+    highlights: ["Painel e telemetria", "Score, confiança e fatores", "Central de operação"],
+  },
+};
 
 export function Acesso() {
+  const { role, setRole } = useRole();
+  const navigate = useNavigate();
+
+  function enter(next: Role) {
+    setRole(next);
+    navigate(HOME_BY_ROLE[next]);
+  }
+
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       <PageHeader
-        eyebrow="Contextos de uso"
-        title="Acesso"
-        description="Escolha o contexto para navegar na demonstração."
+        eyebrow="Perfis de demonstração"
+        title="Escolha uma experiência de demonstração"
+        description="O FloodGuard atende públicos diferentes. Escolha por qual deles quer navegar."
       />
 
       <div className="mb-6 rounded-xl border border-risk-attention/30 bg-risk-attention/[0.06] px-4 py-3">
         <p className="text-xs leading-relaxed text-slate-300">
-          <strong className="text-risk-attention">Modo demonstração</strong> — autenticação não
-          habilitada. Todas as telas ficam abertas e nenhum dado é persistido.
+          <strong className="text-risk-attention">Modo demonstração</strong> — autenticação real não
+          habilitada. A troca de perfil muda apenas o que a interface exibe; nenhuma tela fica
+          protegida de verdade e nenhum dado é persistido.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {CONTEXTS.map((context) => (
-          <section
-            key={context.to}
-            className={`panel flex flex-col p-5 ${context.primary ? "border-accent/40" : ""}`}
-          >
-            <p className="data-label text-accent/80">{context.eyebrow}</p>
-            <h2 className="mt-1.5 font-display text-lg font-semibold leading-tight text-white">
-              {context.title}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">{context.description}</p>
-
-            <Link
-              to={context.to}
-              className={`mt-5 rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
-                context.primary
-                  ? "bg-accent text-navy-950 shadow-[0_0_20px_var(--glow-accent)] hover:bg-accent/90"
-                  : "border border-navy-600 text-slate-200 hover:border-accent hover:text-accent"
-              }`}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {ROLES.map((option) => {
+          const detail = DETAIL[option];
+          const active = option === role;
+          return (
+            <section
+              key={option}
+              className={`panel flex flex-col p-5 ${active ? "border-accent/50" : ""}`}
             >
-              {context.cta}
-            </Link>
+              <div className="flex items-center justify-between gap-2">
+                <p className="data-label text-accent/80">{detail.eyebrow}</p>
+                {active && (
+                  <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+                    atual
+                  </span>
+                )}
+              </div>
 
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-navy-700/70 pt-3">
-              {context.links.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className="text-xs text-slate-400 underline-offset-2 transition-colors hover:text-accent hover:underline"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
+              <h2 className="mt-1.5 font-display text-lg font-semibold leading-tight text-white">
+                {ROLE_LABEL[option]}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{ROLE_SUMMARY[option]}</p>
+
+              <ul className="mt-4 flex flex-col gap-1.5 border-t border-navy-700/70 pt-4">
+                {detail.highlights.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-xs text-slate-400">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/70" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                onClick={() => enter(option)}
+                className={`mt-5 rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
+                  active
+                    ? "bg-accent text-navy-950 shadow-[0_0_20px_var(--glow-accent)] hover:bg-accent/90"
+                    : "border border-navy-600 text-slate-200 hover:border-accent hover:text-accent"
+                }`}
+              >
+                {active ? "Continuar" : `Entrar como ${ROLE_LABEL[option]}`}
+              </button>
+
+              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.12em] text-slate-600">
+                {detail.entry}
+              </p>
+            </section>
+          );
+        })}
       </div>
 
       <div className="mt-6">
         <SessionNote>
-          Perfis, permissões e trilha de auditoria estão no roadmap — ver Saiba mais.
+          {ROLE_DEMO_NOTICE} Autenticação, cadastro e trilha de auditoria estão no roadmap — ver
+          Saiba mais.
         </SessionNote>
       </div>
     </div>

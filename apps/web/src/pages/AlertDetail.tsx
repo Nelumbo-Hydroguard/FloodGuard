@@ -9,6 +9,8 @@ import { EmptyState } from "../components/EmptyState";
 import { RISK_THEME } from "../lib/riskTheme";
 import { OPERATIONAL_ACTION_LABEL, getOperationalRecommendation } from "../lib/alertMessaging";
 import { PublicGuidanceCard } from "../components/PublicGuidanceCard";
+import { showsTechnicalDetail } from "../lib/roleAccess";
+import { useRole } from "../state/RoleProvider";
 
 const STATUS_LABEL: Record<string, string> = {
   simulated_monitoring: "Em monitoramento",
@@ -19,6 +21,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function AlertDetail() {
   const { id } = useParams();
+  const { role } = useRole();
+  const technical = showsTechnicalDetail(role);
   const [alert, setAlert] = useState<DemoAlert | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +80,53 @@ export function AlertDetail() {
   }
 
   const theme = RISK_THEME[alert.risk_level];
+
+  // Cidadão e visitante veem só a camada pública deste mesmo evento: o card
+  // de orientação já traz nível, região, horário, o que está acontecendo e o
+  // que fazer. Score, confiança, fatores e justificativa do motor ficam de
+  // fora — são a leitura de quem opera, não de quem precisa decidir se sai
+  // de casa (F11.2).
+  if (!technical) {
+    return (
+      <div className="max-w-2xl">
+        <PageHeader
+          eyebrow="Situação da região"
+          title={alert.region ?? "Região não informada"}
+          description="Informação pública sobre o evento monitorado nesta região."
+          actions={<StatusBadge level={alert.risk_level} />}
+        />
+
+        <PublicGuidanceCard
+          level={alert.risk_level}
+          region={alert.region}
+          timestamp={alert.timestamp}
+          actions={
+            <>
+              <Link
+                to={`/mapa?alert=${alert.id}`}
+                className="inline-flex items-center rounded-lg border border-accent/40 bg-accent/10 px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+              >
+                Ver no mapa →
+              </Link>
+              <Link
+                to="/abrigos"
+                className="inline-flex items-center rounded-lg border border-navy-600 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
+              >
+                Ver locais seguros
+              </Link>
+            </>
+          }
+        />
+
+        <Link
+          to="/alertas"
+          className="mt-5 inline-flex items-center px-1 py-2 text-sm text-slate-400 underline-offset-2 transition-colors hover:text-white hover:underline"
+        >
+          ← Voltar para Alertas
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
